@@ -10,6 +10,7 @@ using ActionEffectRange.Drawing;
 using ActionEffectRange.Helpers;
 using ActionEffectRange.UI;
 using Dalamud.Game.Command;
+using System.Collections.Generic;
 using Dalamud.IoC;
 using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
@@ -50,6 +51,10 @@ namespace ActionEffectRange
 #endif
 
         private const string commandToggleConfig = "/actioneffectrange";
+        private const string commandToggleConfigAlias = "/aer";
+        // Commands actually registered by this instance (another copy of the
+        //  plugin, e.g. a dev build, may already own them)
+        private static readonly List<string> registeredCommands = new();
 
         private static bool _enabled;
         internal static bool Enabled
@@ -100,12 +105,24 @@ namespace ActionEffectRange
 
         private static void InitializeCommands()
         {
-            CommandManager.AddHandler(commandToggleConfig, 
+            AddCommand(commandToggleConfig,
+                "Toggle the configuration window of ActionEffectRange");
+            AddCommand(commandToggleConfigAlias,
+                $"Alias of {commandToggleConfig}");
+        }
+
+        private static void AddCommand(string command, string help)
+        {
+            if (CommandManager.AddHandler(command,
                 new CommandInfo((_, _) => configWindow?.Toggle())
-            {
-                HelpMessage = "Toggle the Configuration Window of ActionEffectRange",
-                ShowInHelp = true
-            });
+                {
+                    HelpMessage = help,
+                    ShowInHelp = true,
+                }))
+                registeredCommands.Add(command);
+            else
+                PluginLog.Warning($"Command {command} is already registered " +
+                    "(is another copy of the plugin loaded?)");
         }
 
         private static async System.Threading.Tasks.Task InitializeConfigWindow()
@@ -173,7 +190,9 @@ namespace ActionEffectRange
 
             PluginInterface.SavePluginConfig(Config);
 
-            CommandManager.RemoveHandler(commandToggleConfig);
+            foreach (var command in registeredCommands)
+                CommandManager.RemoveHandler(command);
+            registeredCommands.Clear();
             
             PluginInterface.UiBuilder.Draw -= EffectRangeDrawing.OnTick;
 

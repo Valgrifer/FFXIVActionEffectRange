@@ -27,6 +27,8 @@ https://raw.githubusercontent.com/Valgrifer/FFXIVActionEffectRange/master/repo.j
 
 Once added, look for the plugin "ActionEffectRange" in Plugin Installer's available plugins.
 
+Open the configuration window with `/actioneffectrange` or `/aer`.
+
 
 ## Disclaimer
 
