@@ -93,7 +93,7 @@ namespace ActionEffectRange.UI
                     v => Edit(s => s.Thickness = (int)v), out thicknessNode),
                 RowRatios)
             .Row("Keep drawn for (s)", r => r.SliderInput(
-                    style.PersistSeconds, .1f, 5, .1f, 1,
+                    style.PersistSeconds, .1f, 30, .1f, 1,
                     v => Edit(s => s.PersistSeconds = v), out persistNode),
                 RowRatios)
             .Spacer(10)

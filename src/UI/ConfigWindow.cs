@@ -218,7 +218,7 @@ namespace ActionEffectRange.UI
                     Config.DrawDelay, 0, 2, .05f, 2, v => Set(() => Config.DrawDelay = v)),
                 RowRatios)
             .Row("Keep drawn for (s)", r => r.SliderInput(
-                    Config.PersistSeconds, .1f, 5, .1f, 1, v => Set(() => Config.PersistSeconds = v)),
+                    Config.PersistSeconds, .1f, 30, .1f, 1, v => Set(() => Config.PersistSeconds = v)),
                 RowRatios);
 
         private void BuildCastingTab(NodeBuilder b) => b
