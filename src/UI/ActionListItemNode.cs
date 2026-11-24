@@ -2,7 +2,7 @@ using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Core.Interfaces;
 using KamiToolKit.UI;
 using KamiToolKit.UI.Nodes;
-using KamiToolKit.UI.Nodes.ComponentNode;
+using KamiToolKit.UI.Nodes.Simplified;
 using Sheets = Lumina.Excel.Sheets;
 
 namespace ActionEffectRange.UI
@@ -32,16 +32,35 @@ namespace ActionEffectRange.UI
         public static float ItemHeight => 44.0f;
         private const float NativeIconSize = 48.0f;
 
-        private readonly IconNode iconNode;
+        // Icon drawn as plain images (icon + IconA_Frame on top) inside a scaled
+        // container: unlike the icon component they do not catch mouse events,
+        // so hovering/clicking the icon acts on the whole row.
+        private readonly ResNode iconNode;
+        private readonly IconImageNode iconImageNode;
         private readonly TextNode nameNode;
         private readonly TextNode detailNode;
         private readonly TextNode idNode;
 
         public ActionListItemNode()
         {
-            // Native action icon, with the game's icon frame
-            iconNode = new IconNode();
+            iconNode = new ResNode { Size = new Vector2(NativeIconSize, NativeIconSize) };
             iconNode.AttachNode(this);
+
+            iconImageNode = new IconImageNode
+            {
+                Size = new Vector2(40.0f, 40.0f),
+                Position = new Vector2(4.0f, 3.0f),
+                FitTexture = true,
+            };
+            iconImageNode.AttachNode(iconNode);
+
+            new SimpleImageNode
+            {
+                TexturePath = "ui/uld/IconA_Frame.tex",
+                TextureCoordinates = Vector2.Zero,
+                TextureSize = new Vector2(NativeIconSize, NativeIconSize),
+                Size = new Vector2(NativeIconSize, NativeIconSize),
+            }.AttachNode(iconNode);
 
             nameNode = new TextNode
             {
@@ -72,10 +91,10 @@ namespace ActionEffectRange.UI
 
         protected override void SetNodeData(ActionEntry itemData)
         {
-            iconNode.IconId = itemData.IconId;
-            // The icon component handles mouse events itself: the tooltip goes on its image
-            iconNode.IconImage.ActionTooltip = itemData.IconId != 0 ? itemData.ActionId : 0;
+            iconImageNode.IconId = itemData.IconId;
             iconNode.IsVisible = itemData.IconId != 0;
+            // Action tooltip when hovering anywhere on the row
+            ActionTooltip = itemData.ActionId;
             nameNode.String = itemData.Description;
             detailNode.String = itemData.Detail;
             idNode.String = $"#{itemData.ActionId}";
@@ -100,11 +119,9 @@ namespace ActionEffectRange.UI
             var width = Width;
             if (width <= 0) return;
 
-            // The native icon component has a fixed layout (about 48x48 with its
-            // frame) whatever its size: scale it down to fit the row.
-            var iconSize = height - 6.0f;
+            // The icon is laid out at its native 48px size, then scaled to fit the row
+            var iconSize = height - 4.0f;
             var iconScale = iconSize / NativeIconSize;
-            iconNode.Size = new Vector2(NativeIconSize, NativeIconSize);
             iconNode.Scale = new Vector2(iconScale, iconScale);
             iconNode.Position = new Vector2(4.0f, 2.0f);
 
