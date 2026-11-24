@@ -9,7 +9,6 @@ using ActionEffectRange.Actions.Data;
 using ActionEffectRange.Drawing;
 using ActionEffectRange.Helpers;
 using ActionEffectRange.UI;
-using Dalamud.Game;
 using Dalamud.Game.Command;
 using Dalamud.IoC;
 using Dalamud.Plugin;
@@ -20,21 +19,19 @@ namespace ActionEffectRange
     public class Plugin : IDalamudPlugin
     {
         [PluginService]
-        internal static DalamudPluginInterface PluginInterface { get; private set; } = null!;
+        internal static IDalamudPluginInterface PluginInterface { get; private set; } = null!;
         [PluginService]
         internal static ICommandManager CommandManager { get; private set; } = null!;
         [PluginService]
         internal static IDataManager DataManager { get; private set; } = null!;
         [PluginService]
-        internal static ISigScanner SigScanner { get; private set; } = null!;
-        [PluginService]
-        internal static IGameInteropProvider InteropProvider { get; private set; } = null!;
+                internal static IGameInteropProvider InteropProvider { get; private set; } = null!;
         [PluginService]
         internal static IFramework Framework { get; private set; } = null!;
         [PluginService]
         internal static IClientState ClientState { get; private set; } = null!;
         [PluginService]
-        internal static IObjectTable ObejctTable { get; private set; } = null!;
+        internal static IObjectTable ObjectTable { get; private set; } = null!;
         [PluginService]
         internal static IBuddyList BuddyList { get; private set; } = null!;
         [PluginService]
@@ -87,6 +84,7 @@ namespace ActionEffectRange
             InitializeCommands();
 
             PluginInterface.UiBuilder.OpenConfigUi += OnOpenConfigUi;
+            PluginInterface.UiBuilder.OpenMainUi += OnOpenConfigUi;
             PluginInterface.UiBuilder.Draw += ConfigUi.Draw;
 
             PluginInterface.UiBuilder.Draw += EffectRangeDrawing.OnTick;
@@ -112,7 +110,7 @@ namespace ActionEffectRange
             InConfig = true;
         }
 
-        private static void CheckTerritory(ushort terr)
+        private static void CheckTerritory(uint terr)
         {
             if (IsPvPZone)
             {
@@ -126,7 +124,7 @@ namespace ActionEffectRange
             }
         }
 
-        private static void OnLogOut()
+        private static void OnLogOut(int type, int code)
         {
             EffectRangeDrawing.Reset();
         }
@@ -162,6 +160,7 @@ namespace ActionEffectRange
 
             PluginInterface.UiBuilder.Draw -= ConfigUi.Draw;
             PluginInterface.UiBuilder.OpenConfigUi -= OnOpenConfigUi;
+            PluginInterface.UiBuilder.OpenMainUi -= OnOpenConfigUi;
 
             ActionWatcher.Dispose();
             ClassJobWatcher.Dispose();

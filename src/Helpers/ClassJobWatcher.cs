@@ -9,7 +9,7 @@ namespace ActionEffectRange.Helpers
         public delegate void OnClassJobChangedDelegate(uint currentClassJob);
         public static event OnClassJobChangedDelegate ClassJobChanged = delegate { };
 
-        public static uint CurrentClassJobId => LocalPlayer?.ClassJob.Id ?? 0;
+        public static uint CurrentClassJobId => LocalPlayer?.ClassJob.RowId ?? 0;
 
         public static bool IsCurrentClassJobACNRelated()
             => CurrentClassJobId == 26  // ACN
@@ -27,7 +27,7 @@ namespace ActionEffectRange.Helpers
 
         private static void OnFrameworkUpdate(IFramework framework)
         {
-            if (ClientState.LocalContentId == 0) return;
+            if (!ClientState.IsLoggedIn) return;
             if (LocalPlayer == null) return;
             CheckClassJobChange(CurrentClassJobId);
         }

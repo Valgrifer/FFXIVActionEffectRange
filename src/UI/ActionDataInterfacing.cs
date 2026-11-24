@@ -3,30 +3,30 @@ using ActionEffectRange.Actions.Enums;
 using System.Collections.Generic;
 using System.Linq;
 
-using ExcSheets = Lumina.Excel.GeneratedSheets;
+using Sheets = Lumina.Excel.Sheets;
 
 namespace ActionEffectRange.UI
 {
     public static class ActionDataInterfacing
     {
-        public static IEnumerable<ExcSheets.Action>? GetAllPartialMatchActionExcelRows(
+        public static IEnumerable<Sheets.Action>? GetAllPartialMatchActionExcelRows(
             string input, bool alsoMatchId, int maxCount, 
-            bool playerCombatActionOnly, Func<ExcSheets.Action, bool>? filter)
-            => ActionData.ActionExcelSheet?.Where(row => row != null
-                && (row.Name.RawString.Contains(input, 
+            bool playerCombatActionOnly, Func<Sheets.Action, bool>? filter)
+            => ActionData.ActionExcelSheet.Where(row =>
+                (row.Name.ExtractText().Contains(input, 
                         StringComparison.CurrentCultureIgnoreCase)
                     || alsoMatchId && row.RowId.ToString().Contains(input))
                 && (!playerCombatActionOnly || ActionData.IsPlayerCombatAction(row)) 
                 && (filter == null || filter(row)))
             .Take(maxCount);
 
-        public static string GetActionDescription(ExcSheets.Action row)
+        public static string GetActionDescription(Sheets.Action row)
         {
-            var classjobRow = row.ClassJob.Value;
-            var classjob = classjobRow != null && classjobRow.RowId > 0
-                ? $" [{classjobRow.Abbreviation}]" : string.Empty;
+            var classjobRow = row.ClassJob.ValueNullable;
+            var classjob = classjobRow != null && classjobRow.Value.RowId > 0
+                ? $" [{classjobRow.Value.Abbreviation.ExtractText()}]" : string.Empty;
             var pvp = row.IsPvP ? " [PvP]" : string.Empty;
-            return $"#{row.RowId} {row.Name}{classjob}{pvp}";
+            return $"#{row.RowId} {row.Name.ExtractText()}{classjob}{pvp}";
         }
 
         public static string GetAoETypeLabel(ActionAoEType type)

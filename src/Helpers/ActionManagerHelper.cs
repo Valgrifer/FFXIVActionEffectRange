@@ -1,43 +1,29 @@
-﻿using FFXIVClientStructs.FFXIV.Client.Game;
-using System.Runtime.InteropServices;
+using FFXIVClientStructs.FFXIV.Client.Game;
 
 namespace ActionEffectRange.Helpers
 {
     internal unsafe static class ActionManagerHelper
     {
-        private static readonly IntPtr actionMgrPtr;
+        private static ActionManager* Mgr => ActionManager.Instance();
 
-        internal static IntPtr FpUseAction => 
-            (IntPtr)ActionManager.MemberFunctionPointers.UseAction;
-        internal static IntPtr FpUseActionLocation => 
-            (IntPtr)ActionManager.MemberFunctionPointers.UseActionLocation;
+        public static nint Address => (nint)Mgr;
 
-        public static ushort CurrentSeq => actionMgrPtr != IntPtr.Zero
-            ? (ushort)Marshal.ReadInt16(actionMgrPtr + 0x110) : (ushort)0;
-        public static ushort LastRecievedSeq => actionMgrPtr != IntPtr.Zero
-            ? (ushort)Marshal.ReadInt16(actionMgrPtr + 0x112) : (ushort)0;
+        public static ushort CurrentSeq
+            => Mgr != null ? Mgr->LastUsedActionSequence : (ushort)0;
+        public static ushort LastRecievedSeq
+            => Mgr != null ? Mgr->LastHandledActionSequence : (ushort)0;
 
-        public static bool IsCasting => actionMgrPtr != IntPtr.Zero
-            && Marshal.ReadByte(actionMgrPtr + 0x28) != 0; 
-        public static uint CastingActionId => actionMgrPtr != IntPtr.Zero
-            ? (uint)Marshal.ReadInt32(actionMgrPtr + 0x24) : 0u;
-        public static uint CastTargetObjectId => actionMgrPtr != IntPtr.Zero
-            ? (uint)Marshal.ReadInt32(actionMgrPtr + 0x38) : 0u;
-        public static float CastTargetPosX => actionMgrPtr != IntPtr.Zero
-            ? Interop.MarshalFloat(actionMgrPtr + 0x40) : 0f;
-        public static float CastTargetPosY => actionMgrPtr != IntPtr.Zero
-            ? Interop.MarshalFloat(actionMgrPtr + 0x44) : 0f;
-        public static float CastTargetPosZ => actionMgrPtr != IntPtr.Zero
-            ? Interop.MarshalFloat(actionMgrPtr + 0x48) : 0f;
+        public static bool IsCasting
+            => Mgr != null && Mgr->CastActionType != 0;
+        // Spell id of the action being cast (= Action sheet row id)
+        public static uint CastingActionId
+            => Mgr != null ? Mgr->CastSpellId : 0u;
+        public static ulong CastTargetObjectId
+            => Mgr != null ? (ulong)Mgr->CastTargetId : 0ul;
+        public static Vector3 CastTargetPosition
+            => Mgr != null ? Mgr->CastTargetPosition : Vector3.Zero;
         // The player rotation when casting
-        public static float CastRotation => actionMgrPtr != IntPtr.Zero
-            ? Interop.MarshalFloat(actionMgrPtr + 0x50) : 0f;
-        
-        static ActionManagerHelper()
-        {
-            actionMgrPtr = (IntPtr)ActionManager.Instance();
-            if (actionMgrPtr == IntPtr.Zero)
-                PluginLog.Warning("Ptr to ActionManager is 0");
-        }
+        public static float CastRotation
+            => Mgr != null ? Mgr->CastRotation : 0f;
     }
 }

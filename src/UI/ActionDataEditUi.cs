@@ -2,10 +2,10 @@
 using ActionEffectRange.Actions.Data.Template;
 using Dalamud.Interface;
 using Dalamud.Interface.Utility;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 using System.Collections.Generic;
 using System.Linq;
-using ExcSheets = Lumina.Excel.GeneratedSheets;
+using Sheets = Lumina.Excel.Sheets;
 
 namespace ActionEffectRange.UI
 {
@@ -16,13 +16,13 @@ namespace ActionEffectRange.UI
         private string actionSearchInput = string.Empty;
         private Vector2 actionSearchMatchesDisplayRectMin;
         private Vector2 actionSearchMatchesDisplayRectMax;
-        protected IEnumerable<ExcSheets.Action>? actionSearchMatchedActions = null;
-        protected ExcSheets.Action? selectedMatchedActionRow = null;
+        protected IEnumerable<Sheets.Action>? actionSearchMatchedActions = null;
+        protected Sheets.Action? selectedMatchedActionRow = null;
         
         protected abstract Vector2 InitialUiSize { get; }
         protected abstract string UiName { get; }
         protected abstract DataTableModel DataTableViewModel { get; set; }
-        protected virtual Func<ExcSheets.Action, bool>?
+        protected virtual Func<Sheets.Action, bool>?
             ActionSearchExtraFilter { get; } = null;
 
         public void Draw()
@@ -187,10 +187,10 @@ namespace ActionEffectRange.UI
                     ImGui.Text(entry.ActionId.ToString());
                     // Action
                     ImGui.TableNextColumn();
-                    ImGui.Text(excelRow?.Name ?? string.Empty);
+                    ImGui.Text(excelRow?.Name.ExtractText() ?? string.Empty);
                     // ClassJob
                     ImGui.TableNextColumn();
-                    ImGui.Text(excelRow?.ClassJob.Value?.Name ?? string.Empty);
+                    ImGui.Text(excelRow?.ClassJob.ValueNullable?.Name.ExtractText() ?? string.Empty);
                     // Custom fields
                     foreach (var col in editDataColumns)
                     {

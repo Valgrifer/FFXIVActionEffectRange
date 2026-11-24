@@ -1,21 +1,21 @@
 ﻿using Dalamud.Game.ClientState.Objects.Types;
 using Lumina.Excel;
-using GeneratedSheets = Lumina.Excel.GeneratedSheets;
+using Sheets = Lumina.Excel.Sheets;
 
 namespace ActionEffectRange.Helpers
 {
     internal static class PetWatcher
     {
-        private static readonly ExcelSheet<GeneratedSheets.Pet>? petSheet
-            = DataManager.GetExcelSheet<GeneratedSheets.Pet>();
+        private static readonly ExcelSheet<Sheets.Pet> petSheet
+            = DataManager.GetExcelSheet<Sheets.Pet>();
 
         public static bool HasPetPresent => BuddyList.PetBuddy != null;
 
-        public static GameObject? GetPet()
+        public static IGameObject? GetPet()
             => BuddyList.PetBuddy?.GameObject;
 
         public static uint GetPetObjectId()
-            => GetPet()?.ObjectId ?? 0;
+            => GetPet()?.EntityId ?? 0;
 
         public static Vector3 GetPetPosition()
             => GetPet()?.Position ?? new();
@@ -29,7 +29,7 @@ namespace ActionEffectRange.Helpers
 
         public static bool IsNamelessPet(uint petType)
             => petType > 0 
-            && string.IsNullOrEmpty(petSheet?.GetRow(petType)?.Name.RawString);
+            && string.IsNullOrEmpty(petSheet.GetRowOrDefault(petType)?.Name.ExtractText());
 
         public static bool IsBunshin(uint petType)
             => petType == 19 || petType == 22;

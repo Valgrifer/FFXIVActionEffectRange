@@ -1,6 +1,6 @@
 ﻿using Dalamud.Interface;
 using Dalamud.Interface.Components;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 
 namespace ActionEffectRange.UI
 {
@@ -67,7 +67,7 @@ namespace ActionEffectRange.UI
             SetTooltipIfHovered(tooltip);
             ImGui.SameLine();
             ImGui.SetNextItemWidth(itemWidth);
-            ImGui.InputInt("##" + label, ref v, step, stepFast, flags);
+            ImGui.InputInt("##" + label, ref v, step, stepFast, flags: flags);
             SetTooltipIfHovered(tooltip);
             if (v < min) v = min;
             if (v > max) v = max;

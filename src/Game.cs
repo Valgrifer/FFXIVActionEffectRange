@@ -1,19 +1,23 @@
-﻿namespace ActionEffectRange
+using Dalamud.Game.ClientState.Objects.SubKinds;
+using Sheets = Lumina.Excel.Sheets;
+
+namespace ActionEffectRange
 {
     internal class Game
     {
-        public static bool IsPlayerLoaded 
-            => ClientState.LocalContentId != 0 && ClientState.LocalPlayer != null;
+        public static bool IsPlayerLoaded
+            => ClientState.IsLoggedIn && ObjectTable.LocalPlayer != null;
 
-        public static Dalamud.Game.ClientState.Objects.SubKinds.PlayerCharacter?
-            LocalPlayer => ClientState.LocalPlayer;
+        public static IPlayerCharacter? LocalPlayer => ObjectTable.LocalPlayer;
 
         public static bool IsPvPZone
-            => DataManager.GetExcelSheet<Lumina.Excel.GeneratedSheets.TerritoryType>()?
-                .GetRow(ClientState.TerritoryType)?.IsPvpZone ?? false;
+            => DataManager.GetExcelSheet<Sheets.TerritoryType>()
+                .GetRowOrDefault(ClientState.TerritoryType)?.IsPvpZone ?? false;
 
-        public const uint InvalidGameObjectId
-            = Dalamud.Game.ClientState.Objects.Types.GameObject.InvalidGameObjectId;
+        // GameObjectId used by the game for "no target"
+        public const ulong InvalidGameObjectId = 0xE0000000;
 
+        public static bool IsValidGameObjectId(ulong id)
+            => id != 0 && id != InvalidGameObjectId;
     }
 }
