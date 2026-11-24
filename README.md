@@ -19,7 +19,11 @@ such as where has the action landed and how large an area it covered.
 
 [XIVLauncher](https://github.com/goatcorp/FFXIVQuickLauncher) is required to install and run the plugin.
 
-Add my [Dalamud plugin repo](https://github.com/yomishino/MyDalamudPlugins) to Dalamud's Custom Plugin Repositories.
+Add this URL to Dalamud's Custom Plugin Repositories (Dalamud Settings > Experimental):
+
+```
+https://raw.githubusercontent.com/Valgrifer/FFXIVActionEffectRange/master/repo.json
+```
 
 Once added, look for the plugin "ActionEffectRange" in Plugin Installer's available plugins.
 
@@ -58,3 +62,10 @@ or the `DALAMUD_HOME` environment variable).
 dotnet build -c Release   # bin/x64/Release/ActionEffectRange/latest.zip
 dotnet build -c Debug     # dev build
 ```
+
+## Releasing
+
+Publishing a GitHub release with a version tag (e.g. `v2.2.0.0`) runs the
+[Release workflow](.github/workflows/release.yml): it builds the plugin with that
+version, attaches `latest.zip` to the release and updates `repo.json` on the
+default branch. A pre-release only updates the testing version.

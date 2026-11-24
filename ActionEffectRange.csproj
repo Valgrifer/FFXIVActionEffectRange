@@ -1,10 +1,10 @@
 ﻿<Project Sdk="Dalamud.NET.Sdk/15.0.0">
 
   <PropertyGroup>
-    <Authors>yomishino</Authors>
+    <Authors>yomishino, Valgrifer</Authors>
     <Version>2.1.0.0</Version>
     <Description>A FFXIV Dalamud plugin that provides a visual cue on the effect range of the AoE action just used.</Description>
-    <PackageProjectUrl>https://github.com/yomishino/FFXIVActionEffectRange</PackageProjectUrl>
+    <PackageProjectUrl>https://github.com/Valgrifer/FFXIVActionEffectRange</PackageProjectUrl>
     <Configurations>Debug;Release;TestRelease</Configurations>
     <Platforms>x64</Platforms>
     <Nullable>enable</Nullable>

@@ -1,0 +1,120 @@
+name: Release
+
+# On each published GitHub release (tag like v2.2.0.0):
+#  - builds the plugin in Release with the version taken from the tag,
+#  - attaches the packaged plugin (latest.zip) to the release,
+#  - updates repo.json at the root of the default branch, the custom plugin
+#    repository users add in Dalamud.
+# A pre-release only updates the testing version of repo.json.
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+env:
+  PLUGIN: ActionEffectRange
+  DALAMUD_HOME: ${{ github.workspace }}/.dalamud
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout the release tag
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Download Dalamud
+        run: |
+          mkdir -p "$DALAMUD_HOME"
+          curl -fsSL -o dalamud.zip https://goatcorp.github.io/dalamud-distrib/latest.zip
+          unzip -q dalamud.zip -d "$DALAMUD_HOME"
+
+      - name: Version from tag
+        id: version
+        run: |
+          TAG="${{ github.event.release.tag_name }}"
+          VERSION="${TAG#v}"
+          VERSION="${VERSION%%-*}"    # v2.3.0.0-beta -> 2.3.0.0
+          if ! [[ "$VERSION" =~ ^[0-9]+(\.[0-9]+){1,3}$ ]]; then
+            echo "::error::Tag '$TAG' is not a version (expected e.g. v2.2.0.0 or v2.2.0.0-beta)"
+            exit 1
+          fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Build
+        run: dotnet build -c Release -p:Version=${{ steps.version.outputs.version }}
+
+      - name: Attach the plugin to the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release upload "${{ steps.version.outputs.tag }}" \
+            "bin/x64/Release/$PLUGIN/latest.zip" --clobber
+
+      - name: Checkout the default branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          path: default-branch
+
+      - name: Update repo.json
+        run: |
+          MANIFEST="bin/x64/Release/$PLUGIN/$PLUGIN.json"
+          REPO_JSON="default-branch/repo.json"
+          URL="https://github.com/${{ github.repository }}/releases/download/${{ steps.version.outputs.tag }}/latest.zip"
+          OLD="[]"
+          [ -f "$REPO_JSON" ] && OLD="$(cat "$REPO_JSON")"
+
+          jq -n \
+            --slurpfile manifest "$MANIFEST" \
+            --argjson old "$OLD" \
+            --arg url "$URL" \
+            --argjson prerelease "${{ github.event.release.prerelease }}" \
+            --argjson now "$(date +%s)" '
+            ($manifest[0]) as $m
+            | ($old | map(select(.InternalName == $m.InternalName)) | first) as $prev
+            | if $prerelease and $prev != null then
+                # Testing version only, the stable one is kept
+                [$prev + {
+                  TestingAssemblyVersion: $m.AssemblyVersion,
+                  DownloadLinkTesting: $url,
+                  LastUpdate: $now
+                }]
+              else
+                [$m + {
+                  TestingAssemblyVersion: $m.AssemblyVersion,
+                  IsHide: false,
+                  IsTestingExclusive: $prerelease,
+                  DownloadLinkInstall: $url,
+                  DownloadLinkUpdate: $url,
+                  DownloadLinkTesting: $url,
+                  LastUpdate: $now
+                }]
+              end' > repo.json.new
+          mv repo.json.new "$REPO_JSON"
+          cat "$REPO_JSON"
+
+      - name: Commit repo.json
+        working-directory: default-branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add repo.json
+          if git diff --cached --quiet; then
+            echo "repo.json unchanged"
+          else
+            git commit -m "repo.json: ${{ steps.version.outputs.tag }}"
+            git push
+          fi
