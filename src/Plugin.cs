@@ -13,6 +13,8 @@ using Dalamud.Game.Command;
 using Dalamud.IoC;
 using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
+using Dalamud.Utility;
+using KamiToolKit;
 
 namespace ActionEffectRange
 {
@@ -74,7 +76,7 @@ namespace ActionEffectRange
         internal static bool DrawWhenCasting;
         
         internal static Configuration Config = null!;
-        internal static bool InConfig = false;
+        private static ConfigWindow? configWindow;
 
         public Plugin()
         {
@@ -83,9 +85,9 @@ namespace ActionEffectRange
 
             InitializeCommands();
 
+            _ = InitializeConfigWindow();
             PluginInterface.UiBuilder.OpenConfigUi += OnOpenConfigUi;
             PluginInterface.UiBuilder.OpenMainUi += OnOpenConfigUi;
-            PluginInterface.UiBuilder.Draw += ConfigUi.Draw;
 
             PluginInterface.UiBuilder.Draw += EffectRangeDrawing.OnTick;
 
@@ -98,16 +100,35 @@ namespace ActionEffectRange
         private static void InitializeCommands()
         {
             CommandManager.AddHandler(commandToggleConfig, 
-                new CommandInfo((_, _) => InConfig = !InConfig)
+                new CommandInfo((_, _) => configWindow?.Toggle())
             {
                 HelpMessage = "Toggle the Configuration Window of ActionEffectRange",
                 ShowInHelp = true
             });
         }
 
+        private static async System.Threading.Tasks.Task InitializeConfigWindow()
+        {
+            try
+            {
+                await KamiToolKitLibrary.InitializeAsync(PluginInterface);
+                configWindow = new ConfigWindow
+                {
+                    InternalName = "ActionEffectRangeConfig",
+                    Title = "ActionEffectRange",
+                    Subtitle = "Configuration",
+                    Size = new Vector2(520, 560),
+                };
+            }
+            catch (Exception e)
+            {
+                PluginLog.Error($"Failed to initialise the configuration window: {e}");
+            }
+        }
+
         private static void OnOpenConfigUi()
         {
-            InConfig = true;
+            configWindow?.Open();
         }
 
         private static void CheckTerritory(uint terr)
@@ -158,12 +179,23 @@ namespace ActionEffectRange
             ClientState.Logout -= OnLogOut;
             ClientState.TerritoryChanged -= CheckTerritory;
 
-            PluginInterface.UiBuilder.Draw -= ConfigUi.Draw;
             PluginInterface.UiBuilder.OpenConfigUi -= OnOpenConfigUi;
             PluginInterface.UiBuilder.OpenMainUi -= OnOpenConfigUi;
 
             ActionWatcher.Dispose();
             ClassJobWatcher.Dispose();
+
+            if (ThreadSafety.IsMainThread)
+            {
+                configWindow?.Dispose();
+                KamiToolKitLibrary.Dispose();
+            }
+            else
+            {
+                configWindow?.DisposeAsync().AsTask().GetAwaiter().GetResult();
+                KamiToolKitLibrary.DisposeAsync().GetAwaiter().GetResult();
+            }
+            configWindow = null;
         }
 
         public void Dispose()

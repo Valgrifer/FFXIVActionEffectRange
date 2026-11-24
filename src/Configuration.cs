@@ -49,7 +49,6 @@ namespace ActionEffectRange
             = Array.Empty<ConeAoEAngleDataItem>();
 
         public bool LogDebug = false;
-        public bool ShowSponsor = false;
 
 
         public void Save()

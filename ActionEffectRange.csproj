@@ -1,4 +1,4 @@
-<Project Sdk="Dalamud.NET.Sdk/15.0.0">
+﻿<Project Sdk="Dalamud.NET.Sdk/15.0.0">
 
   <PropertyGroup>
     <Authors>yomishino</Authors>
@@ -11,6 +11,17 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NoWarn>$(NoWarn);CA1416</NoWarn>
   </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="KamiToolKit" Version="3.0.12" GeneratePathProperty="true" />
+  </ItemGroup>
+
+  <!-- KamiToolKit loads its textures (colour picker...) from <plugin dir>/Assets -->
+  <ItemGroup>
+    <None Include="$(PkgKamiToolKit)/contentFiles/any/*/Assets/*.png"
+          Link="Assets/%(Filename)%(Extension)"
+          CopyToOutputDirectory="PreserveNewest" Visible="false" />
+  </ItemGroup>
 
   <PropertyGroup Condition="'$(Configuration)' == 'TestRelease'">
     <DefineConstants>$(DefineConstants);TRACE;TEST</DefineConstants>
