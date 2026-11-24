@@ -3,7 +3,7 @@
     "Author": "yomishino, Valgrifer",
     "Name": "ActionEffectRange",
     "InternalName": "ActionEffectRange",
-    "AssemblyVersion": "2.1.0.1",
+    "AssemblyVersion": "2.1.0.2",
     "Description": "This plugin provides a visual cue on the effect range of the AoE action you just used.\n\nMay be used as a supplement/replacement to the actions' VFXs in showing effect range related information, such as where has the action landed and how large an area it covered.",
     "ApplicableVersion": "any",
     "RepoUrl": "https://github.com/Valgrifer/FFXIVActionEffectRange",
@@ -27,12 +27,12 @@
     "Punchline": "Provides a visual cue on the effect range of the AoE action just used.",
     "Changelog": "Update: Dalamud API15 compatibility (patch 7.x); new native configuration window; custom drawing style per class/job AoE action",
     "AcceptsFeedback": true,
-    "TestingAssemblyVersion": "2.1.0.1",
+    "TestingAssemblyVersion": "2.1.0.2",
     "IsHide": false,
     "IsTestingExclusive": false,
-    "DownloadLinkInstall": "https://github.com/Valgrifer/FFXIVActionEffectRange/releases/download/v2.1.0.1/latest.zip",
-    "DownloadLinkUpdate": "https://github.com/Valgrifer/FFXIVActionEffectRange/releases/download/v2.1.0.1/latest.zip",
-    "DownloadLinkTesting": "https://github.com/Valgrifer/FFXIVActionEffectRange/releases/download/v2.1.0.1/latest.zip",
-    "LastUpdate": 1795537004
+    "DownloadLinkInstall": "https://github.com/Valgrifer/FFXIVActionEffectRange/releases/download/v2.1.0.2/latest.zip",
+    "DownloadLinkUpdate": "https://github.com/Valgrifer/FFXIVActionEffectRange/releases/download/v2.1.0.2/latest.zip",
+    "DownloadLinkTesting": "https://github.com/Valgrifer/FFXIVActionEffectRange/releases/download/v2.1.0.2/latest.zip",
+    "LastUpdate": 1795538498
   }
 ]
