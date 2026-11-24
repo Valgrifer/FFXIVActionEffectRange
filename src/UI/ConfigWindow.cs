@@ -147,18 +147,20 @@ namespace ActionEffectRange.UI
             .Spacer(CategorySpacing)
             .CategoryLabel("Pets")
             .TextWrapped("Also draw the AoE actions of your pet or summoned companion,\n" +
-                "depending on your current job (e.g. MCH: Automaton Queen, DRK: Esteem).", 2)
+                "depending on your current job.", 2)
             .HorizontalList(h => h
-                .Checkbox("ACN/SMN", Config.DrawPetsAcnSmn,
-                    v => Set(() => Config.DrawPetsAcnSmn = v), n => ((NodeBase)n).Width = 110)
-                .Checkbox("SCH", Config.DrawPetsSch,
-                    v => Set(() => Config.DrawPetsSch = v), n => ((NodeBase)n).Width = 75)
-                .Checkbox("MCH", Config.DrawPetsMch,
-                    v => Set(() => Config.DrawPetsMch = v), n => ((NodeBase)n).Width = 75)
-                .Checkbox("DRK", Config.DrawPetsDrk,
-                    v => Set(() => Config.DrawPetsDrk = v), n => ((NodeBase)n).Width = 75)
+                .Checkbox(JobAbbr(32, "DRK"), Config.DrawPetsDrk,
+                    v => Set(() => Config.DrawPetsDrk = v), n => ((NodeBase)n).Width = 68)
+                .Checkbox(JobAbbr(28, "SCH"), Config.DrawPetsSch,
+                    v => Set(() => Config.DrawPetsSch = v), n => ((NodeBase)n).Width = 68)
+                .Checkbox(JobAbbr(31, "MCH"), Config.DrawPetsMch,
+                    v => Set(() => Config.DrawPetsMch = v), n => ((NodeBase)n).Width = 68)
+                .Checkbox($"{JobAbbr(26, "ACN")}/{JobAbbr(27, "SMN")}", Config.DrawPetsAcnSmn,
+                    v => Set(() => Config.DrawPetsAcnSmn = v), n => ((NodeBase)n).Width = 100)
+                .Checkbox(JobAbbr(43, "BST"), Config.DrawPetsBst,
+                    v => Set(() => Config.DrawPetsBst = v), n => ((NodeBase)n).Width = 68)
                 .Checkbox("Other", Config.DrawPetsOther,
-                    v => Set(() => Config.DrawPetsOther = v), n => ((NodeBase)n).Width = 85),
+                    v => Set(() => Config.DrawPetsOther = v), n => ((NodeBase)n).Width = 80),
                 n => { n.Height = 24; ((LayoutListNode)n).ItemSpacing = 6; })
             .Spacer(CategorySpacing)
             .CategoryLabel("Large effect ranges")
@@ -464,6 +466,14 @@ namespace ActionEffectRange.UI
                 ConfirmedSelections = onConfirmed,
             };
             searchAddon.Open();
+        }
+
+        // Class/job abbreviation in the client language
+        private static string JobAbbr(uint classJobId, string fallback)
+        {
+            var abbr = DataManager.GetExcelSheet<Lumina.Excel.Sheets.ClassJob>()
+                .GetRowOrDefault(classJobId)?.Abbreviation.ExtractText();
+            return string.IsNullOrEmpty(abbr) ? fallback : abbr;
         }
 
         private static PaddedContentNode Padded(Action<NodeBuilder> build)

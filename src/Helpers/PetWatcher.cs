@@ -5,7 +5,7 @@ using Sheets = Lumina.Excel.Sheets;
 namespace ActionEffectRange.Helpers
 {
     // Pets grouped by the job of their owner, for the pet drawing options
-    public enum PetGroup { None, AcnSmn, Sch, Mch, Drk, Other }
+    public enum PetGroup { None, AcnSmn, Sch, Mch, Drk, Bst, Other }
 
     internal static class PetWatcher
     {
@@ -67,6 +67,7 @@ namespace ActionEffectRange.Helpers
                 28 => PetGroup.Sch,
                 31 => PetGroup.Mch,
                 32 => PetGroup.Drk,
+                43 => PetGroup.Bst,     // Beastmaster (7.5)
                 _ => PetGroup.Other,
             };
         }

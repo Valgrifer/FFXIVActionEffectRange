@@ -21,6 +21,7 @@ namespace ActionEffectRange
         public bool DrawPetsSch = true;
         public bool DrawPetsMch = true;
         public bool DrawPetsDrk = true;
+        public bool DrawPetsBst = true;
         public bool DrawPetsOther = true;
 
         // Before version 2: replaced by the DrawPets* options above
@@ -68,6 +69,7 @@ namespace ActionEffectRange
                 Helpers.PetGroup.Sch => DrawPetsSch,
                 Helpers.PetGroup.Mch => DrawPetsMch,
                 Helpers.PetGroup.Drk => DrawPetsDrk,
+                Helpers.PetGroup.Bst => DrawPetsBst,
                 Helpers.PetGroup.Other => DrawPetsOther,
                 _ => true,
             };
@@ -78,7 +80,7 @@ namespace ActionEffectRange
             if (Version < 2)
             {
                 DrawPetsAcnSmn = DrawPetsSch = DrawACNPets;
-                DrawPetsMch = DrawPetsDrk = DrawPetsOther = DrawSummonedCompanions;
+                DrawPetsMch = DrawPetsDrk = DrawPetsBst = DrawPetsOther = DrawSummonedCompanions;
                 Version = 2;
                 Save();
             }
