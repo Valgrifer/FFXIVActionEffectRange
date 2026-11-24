@@ -12,6 +12,8 @@ namespace ActionEffectRange.UI
             Span<FFXIVClientStructs.FFXIV.Component.GUI.AtkValue> atkValueSpan)
         {
             base.OnSetup(addon, atkValueSpan);
+            // The default placeholder is a game text id, which takes precedence
+            SearchInputNode?.PlaceholderStringTextId = 0;
             SearchInputNode?.PlaceholderString = "Search by action name, job or id";
             ResultsListNode?.PlaceholderString = "No matching action.";
         }
@@ -22,6 +24,7 @@ namespace ActionEffectRange.UI
         {
             base.OnShow(addon);
             ResultsListNode?.FullRebuild();
+            ListHelpers.EnsureMinScrollThumb(ResultsListNode);
         }
 
         protected override void OnSearchInputReceived(ReadOnlySeString searchString)
@@ -33,6 +36,7 @@ namespace ActionEffectRange.UI
                     StringComparison.CurrentCultureIgnoreCase)).ToList();
 
             base.OnSearchInputReceived(searchString);
+            ListHelpers.EnsureMinScrollThumb(ResultsListNode);
         }
     }
 }

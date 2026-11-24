@@ -53,6 +53,8 @@ namespace ActionEffectRange.UI
             // Lists build their rows before they have their final size
             blacklistNode?.FullRebuild();
             coneListNode?.FullRebuild();
+            ListHelpers.EnsureMinScrollThumb(blacklistNode);
+            ListHelpers.EnsureMinScrollThumb(coneListNode);
         }
 
         protected override unsafe void OnFinalize(AtkUnitBase* addon)
@@ -294,6 +296,8 @@ namespace ActionEffectRange.UI
         {
             blacklistNode?.Options = BlacklistEntries();
             coneListNode?.Options = ConeEntries();
+            ListHelpers.EnsureMinScrollThumb(blacklistNode);
+            ListHelpers.EnsureMinScrollThumb(coneListNode);
         }
 
         private static void SaveCustomised()

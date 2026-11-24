@@ -30,6 +30,7 @@ namespace ActionEffectRange.UI
     public class ActionListItemNode : ListItemWithFocusNav<ActionEntry>, IListItemNode
     {
         public static float ItemHeight => 44.0f;
+        private const float NativeIconSize = 48.0f;
 
         private readonly IconNode iconNode;
         private readonly TextNode nameNode;
@@ -72,7 +73,8 @@ namespace ActionEffectRange.UI
         protected override void SetNodeData(ActionEntry itemData)
         {
             iconNode.IconId = itemData.IconId;
-            iconNode.ActionTooltip = itemData.IconId != 0 ? itemData.ActionId : 0;
+            // The icon component handles mouse events itself: the tooltip goes on its image
+            iconNode.IconImage.ActionTooltip = itemData.IconId != 0 ? itemData.ActionId : 0;
             iconNode.IsVisible = itemData.IconId != 0;
             nameNode.String = itemData.Description;
             detailNode.String = itemData.Detail;
@@ -98,9 +100,13 @@ namespace ActionEffectRange.UI
             var width = Width;
             if (width <= 0) return;
 
+            // The native icon component has a fixed layout (about 48x48 with its
+            // frame) whatever its size: scale it down to fit the row.
             var iconSize = height - 6.0f;
-            iconNode.Size = new Vector2(iconSize, iconSize);
-            iconNode.Position = new Vector2(4.0f, 3.0f);
+            var iconScale = iconSize / NativeIconSize;
+            iconNode.Size = new Vector2(NativeIconSize, NativeIconSize);
+            iconNode.Scale = new Vector2(iconScale, iconScale);
+            iconNode.Position = new Vector2(4.0f, 2.0f);
 
             var textX = iconNode.Position.X + iconSize + 8.0f;
             var idWidth = 60.0f;
