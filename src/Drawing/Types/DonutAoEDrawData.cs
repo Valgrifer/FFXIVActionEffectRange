@@ -45,7 +45,7 @@ namespace ActionEffectRange.Drawing.Types
                     ? new(float.NaN, float.NaN) : pInner;
             }
 
-            if (Config.Filled 
+            if (Style.Filled 
                 && (Config.LargeDrawOpt == 0 || Radius < Config.LargeThreshold))
             {
                 for (int i = 0; i < Config.NumSegments - 1; i++)
@@ -66,19 +66,19 @@ namespace ActionEffectRange.Drawing.Types
                         innerPoints[^1], innerPoints[0], FillColour);
             }
 
-            if (Config.OuterRing)
+            if (Style.OuterRing)
             {
                 // outer
                 for (int i = 0; i < Config.NumSegments; i++)
                     if (!float.IsNaN(outerPoints[i].X)) 
                         drawList.PathLineTo(outerPoints[i]);
-                drawList.PathStroke(RingColour, ImDrawFlags.Closed, Config.Thickness);
+                drawList.PathStroke(RingColour, ImDrawFlags.Closed, Style.Thickness);
 
                 // inner
                 for (int i = 0; i < Config.NumSegments; i++)
                     if (!float.IsNaN(innerPoints[i].X)) 
                         drawList.PathLineTo(innerPoints[i]);
-                drawList.PathStroke(RingColour, ImDrawFlags.Closed, Config.Thickness);
+                drawList.PathStroke(RingColour, ImDrawFlags.Closed, Style.Thickness);
             }
         }
     }

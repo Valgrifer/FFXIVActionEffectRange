@@ -1,4 +1,5 @@
-﻿using ActionEffectRange.Actions.EffectRange;
+﻿using ActionEffectRange.Actions.Data;
+using ActionEffectRange.Actions.EffectRange;
 using ActionEffectRange.Actions.Enums;
 using Dalamud.Bindings.ImGui;
 using System.Collections.Generic;
@@ -7,7 +8,7 @@ namespace ActionEffectRange.Drawing.Workers
 {
     public class DrawWorker : IDrawWorker
     {
-        private readonly Queue<DrawData> drawDataQueue = new();
+        private readonly List<DrawData> drawDataQueue = new();
 
         private uint beneficialRingColour;
         private uint beneficialFillColour;
@@ -28,9 +29,9 @@ namespace ActionEffectRange.Drawing.Workers
 
         public void CleanupOld()
         {
-            while (drawDataQueue.TryPeek(out var head)
-                && head.ElapsedSeconds > Config.DrawDelay + Config.PersistSeconds)
-                drawDataQueue.Dequeue();
+            // Each drawing may have its own duration (custom action styles)
+            drawDataQueue.RemoveAll(data
+                => data.ElapsedSeconds > Config.DrawDelay + data.Style.PersistSeconds);
         }
 
         public void Draw(ImDrawListPtr drawList)
@@ -51,23 +52,38 @@ namespace ActionEffectRange.Drawing.Workers
             LogUserDebug($"{GetType().Name}.QueueDrawing => " +
                 $"{effectRangeData}, orig={originPos}, target={targetPos}, rotation={rotation}");
 
-            if (effectRangeData.Harmfulness.HasFlag(ActionHarmfulness.Harmful)
-                && Config.DrawHarmful)
+            var isHarmful = effectRangeData.Harmfulness.HasFlag(ActionHarmfulness.Harmful);
+            var isBeneficial = effectRangeData.Harmfulness.HasFlag(ActionHarmfulness.Beneficial);
+
+            // A custom action style replaces the harmful/beneficial colours: drawn once
+            if (ActionData.TryGetActionStyle(effectRangeData.ActionId, out var custom)
+                && custom != null)
             {
-                var drawData = EffectRangeDrawing.GenerateDrawData(
-                    effectRangeData, harmfulRingColour, harmfulFillColour,
-                    originPos, targetPos, rotation);
-                if (drawData != null) drawDataQueue.Enqueue(drawData);
+                if (isHarmful && Config.DrawHarmful || isBeneficial && Config.DrawBeneficial)
+                    Enqueue(effectRangeData,
+                        ImGui.ColorConvertFloat4ToU32(custom.Colour),
+                        ImGui.ColorConvertFloat4ToU32(new(custom.Colour.X,
+                            custom.Colour.Y, custom.Colour.Z, custom.FillAlpha)),
+                        originPos, targetPos, rotation, DrawStyle.From(custom));
+                return;
             }
 
-            if (effectRangeData.Harmfulness.HasFlag(ActionHarmfulness.Beneficial)
-                && Config.DrawBeneficial)
-            {
-                var drawData = EffectRangeDrawing.GenerateDrawData(
-                    effectRangeData, beneficialRingColour, beneficialFillColour,
-                    originPos, targetPos, rotation);
-                if (drawData != null) drawDataQueue.Enqueue(drawData);
-            }
+            var style = DrawStyle.Global;
+            if (isHarmful && Config.DrawHarmful)
+                Enqueue(effectRangeData, harmfulRingColour, harmfulFillColour,
+                    originPos, targetPos, rotation, style);
+            if (isBeneficial && Config.DrawBeneficial)
+                Enqueue(effectRangeData, beneficialRingColour, beneficialFillColour,
+                    originPos, targetPos, rotation, style);
+        }
+
+        private void Enqueue(EffectRangeData effectRangeData, uint ringColour,
+            uint fillColour, Vector3 originPos, Vector3 targetPos, float rotation,
+            DrawStyle style)
+        {
+            var drawData = EffectRangeDrawing.GenerateDrawData(effectRangeData,
+                ringColour, fillColour, originPos, targetPos, rotation, style);
+            if (drawData != null) drawDataQueue.Add(drawData);
         }
 
         public void RefreshConfig()

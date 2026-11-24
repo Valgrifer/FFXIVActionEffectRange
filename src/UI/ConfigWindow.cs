@@ -1,10 +1,12 @@
-using ActionEffectRange.Actions.Data;
+﻿using ActionEffectRange.Actions.Data;
+using ActionEffectRange.Actions.Data.Template;
 using ActionEffectRange.Actions.Enums;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Controls.Builders;
 using KamiToolKit.Core.Interfaces;
 using KamiToolKit.Core.Primitives.NativeAddon;
 using KamiToolKit.Core.Primitives.NodeBase;
+using KamiToolKit.UI.Nodes;
 using KamiToolKit.UI.Nodes.ComponentNode;
 using KamiToolKit.UI.Nodes.Layout;
 using System.Collections.Generic;
@@ -33,6 +35,19 @@ namespace ActionEffectRange.UI
         private int coneAngleDeg = 90;
         private int coneOffsetDeg = 0;
 
+        private ListNode<ActionEntry, ActionListItemNode>? styleListNode;
+        private ActionEntry? selectedStyled;
+        // Values shown in the style editor: the selected action's style,
+        // or the style given to newly added actions when none is selected
+        private ActionStyleDataItem editedStyle = DefaultActionStyle();
+        private bool loadingStyle;
+        private ColorEditNode? styleColourNode;
+        private CheckboxNode? styleFilledNode;
+        private FloatSliderNode? styleFillAlphaNode;
+        private CheckboxNode? styleOuterRingNode;
+        private SliderNode? styleThicknessNode;
+        private FloatSliderNode? stylePersistNode;
+
         protected override unsafe void OnSetup(AtkUnitBase* addon, Span<AtkValue> atkValueSpan)
         {
             base.OnSetup(addon, atkValueSpan);
@@ -43,7 +58,8 @@ namespace ActionEffectRange.UI
                     .AddTab("Style", Padded(BuildStyleTab))
                     .AddTab("Casting", Padded(BuildCastingTab))
                     .AddTab("Blacklist", Padded(BuildBlacklistTab))
-                    .AddTab("Cone AoEs", Padded(BuildConeTab))));
+                    .AddTab("Cone AoEs", Padded(BuildConeTab))
+                    .AddTab("Action styles", Padded(BuildActionStyleTab))));
             ((NodeBase)root).AttachNode(this);
         }
 
@@ -53,8 +69,10 @@ namespace ActionEffectRange.UI
             // Lists build their rows before they have their final size
             blacklistNode?.FullRebuild();
             coneListNode?.FullRebuild();
+            styleListNode?.FullRebuild();
             ListHelpers.EnsureMinScrollThumb(blacklistNode);
             ListHelpers.EnsureMinScrollThumb(coneListNode);
+            ListHelpers.EnsureMinScrollThumb(styleListNode);
         }
 
         protected override unsafe void OnFinalize(AtkUnitBase* addon)
@@ -65,6 +83,14 @@ namespace ActionEffectRange.UI
             coneOffsetInput = null;
             selectedBlacklisted = null;
             selectedCone = null;
+            styleListNode = null;
+            selectedStyled = null;
+            styleColourNode = null;
+            styleFilledNode = null;
+            styleFillAlphaNode = null;
+            styleOuterRingNode = null;
+            styleThicknessNode = null;
+            stylePersistNode = null;
             ActionData.SaveCustomisedData(writeToFile: true);
             base.OnFinalize(addon);
         }
@@ -215,6 +241,110 @@ namespace ActionEffectRange.UI
                 OnConeSelected, out coneListNode,
                 n => n.PlaceholderString = "No customised cone AoE.");
 
+        private void BuildActionStyleTab(NodeBuilder b) => b
+            .TextWrapped("Custom drawing style for class/job AoE actions, replacing the\n" +
+                "global colours and style. Select an action to edit its style.", 2)
+            .Spacer(4)
+            .ColorEdit4("Colour", editedStyle.Colour, null,
+                v => EditStyle(s => s.Colour = v), out styleColourNode)
+            .Checkbox("Fill", editedStyle.Filled,
+                v => EditStyle(s => s.Filled = v), out styleFilledNode)
+            .Row("Fill opacity", r => r.FloatSlider(
+                    editedStyle.FillAlpha, 0, 1, v => EditStyle(s => s.FillAlpha = v),
+                    out styleFillAlphaNode, n => n.Step = .01f),
+                RowRatios)
+            .Checkbox("Draw outline (outer ring)", editedStyle.OuterRing,
+                v => EditStyle(s => s.OuterRing = v), out styleOuterRingNode)
+            .Row("Outline thickness", r => r.IntSlider(
+                    editedStyle.Thickness, 1, 50, v => EditStyle(s => s.Thickness = v),
+                    out styleThicknessNode),
+                RowRatios)
+            .Row("Keep drawn for (s)", r => r.FloatSlider(
+                    editedStyle.PersistSeconds, .1f, 5, v => EditStyle(s => s.PersistSeconds = v),
+                    out stylePersistNode, n => n.Step = .1f),
+                RowRatios)
+            .Spacer(4)
+            .HorizontalList(h => h
+                .TextButton("Add actions...", () => OpenActionSearch("Class/job AoE actions",
+                        AddStyledActions, IsClassJobAoEAction),
+                    n => n.Width = 140)
+                .TextButton("Remove selected", RemoveStyledAction, n => n.Width = 140),
+                n => { n.Height = 26; ((LayoutListNode)n).ItemSpacing = 6; })
+            .Spacer(4)
+            .List<ActionEntry, ActionListItemNode>(StyleEntries(),
+                OnStyledActionSelected, out styleListNode,
+                n => n.PlaceholderString = "No action with a custom style.");
+
+        #endregion
+
+        #region Action styles data
+
+        private static bool IsClassJobAoEAction(Lumina.Excel.Sheets.Action row)
+            => row.EffectRange > 0 && row.ClassJob.ValueNullable is { RowId: > 0 };
+
+        private static ActionStyleDataItem DefaultActionStyle() => new()
+        {
+            Colour = Config.HarmfulColour,
+            Filled = Config.Filled,
+            FillAlpha = Config.FillAlpha,
+            OuterRing = Config.OuterRing,
+            Thickness = Config.Thickness,
+            PersistSeconds = Config.PersistSeconds,
+        };
+
+        private static List<ActionEntry> StyleEntries()
+            => ActionData.GetCustomisedActionStyleListCopy()
+                .Select(i => ActionEntry.FromId(i.ActionId))
+                .OrderBy(e => e.Description, StringComparer.CurrentCultureIgnoreCase)
+                .ThenBy(e => e.ActionId).ToList();
+
+        private void EditStyle(Action<ActionStyleDataItem> apply)
+        {
+            apply(editedStyle);
+            if (loadingStyle || selectedStyled == null) return;
+            ActionData.SetActionStyle(editedStyle.CopyFor(selectedStyled.ActionId));
+            SaveCustomised();
+        }
+
+        private void OnStyledActionSelected(ActionEntry? entry)
+        {
+            selectedStyled = entry;
+            if (entry == null || !ActionData.TryGetActionStyle(entry.ActionId, out var item)
+                || item == null) return;
+            editedStyle = item.CopyFor(0);
+            loadingStyle = true;
+            try
+            {
+                styleColourNode?.CurrentColor = editedStyle.Colour;
+                styleFilledNode?.IsChecked = editedStyle.Filled;
+                styleFillAlphaNode?.SetValueSilent(editedStyle.FillAlpha);
+                styleOuterRingNode?.IsChecked = editedStyle.OuterRing;
+                styleThicknessNode?.SetValueSilent(editedStyle.Thickness);
+                stylePersistNode?.SetValueSilent(editedStyle.PersistSeconds);
+            }
+            finally
+            {
+                loadingStyle = false;
+            }
+        }
+
+        private void AddStyledActions(List<ActionEntry> entries)
+        {
+            foreach (var e in entries)
+                ActionData.SetActionStyle(editedStyle.CopyFor(e.ActionId));
+            SaveCustomised();
+            RefreshLists();
+        }
+
+        private void RemoveStyledAction()
+        {
+            if (selectedStyled == null) return;
+            ActionData.RemoveFromActionStyleList(selectedStyled.ActionId);
+            selectedStyled = null;
+            SaveCustomised();
+            RefreshLists();
+        }
+
         #endregion
 
         #region Blacklist / cone data
@@ -296,8 +426,10 @@ namespace ActionEffectRange.UI
         {
             blacklistNode?.Options = BlacklistEntries();
             coneListNode?.Options = ConeEntries();
+            styleListNode?.Options = StyleEntries();
             ListHelpers.EnsureMinScrollThumb(blacklistNode);
             ListHelpers.EnsureMinScrollThumb(coneListNode);
+            ListHelpers.EnsureMinScrollThumb(styleListNode);
         }
 
         private static void SaveCustomised()

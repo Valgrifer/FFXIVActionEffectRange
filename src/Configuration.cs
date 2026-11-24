@@ -47,6 +47,8 @@ namespace ActionEffectRange
             = Array.Empty<AoETypeDataItem>();
         public ConeAoEAngleDataItem[] ConeAoeAngleList 
             = Array.Empty<ConeAoEAngleDataItem>();
+        public ActionStyleDataItem[] ActionStyleList
+            = Array.Empty<ActionStyleDataItem>();
 
         public bool LogDebug = false;
 

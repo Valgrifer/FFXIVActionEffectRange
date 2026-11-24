@@ -56,11 +56,11 @@ namespace ActionEffectRange.Drawing.Types
                 drawList.PathLineTo(p);
             }
             drawList.PathLineTo(projectedEnd);
-            if (Config.Filled)
+            if (Style.Filled)
                 drawList.PathFillConvex(FillColour);
-            if (Config.OuterRing)
+            if (Style.OuterRing)
             {
-                if (Config.Filled)
+                if (Style.Filled)
                 {
                     drawList.PathLineTo(projectedOrigin);
                     foreach (var p in points)
@@ -68,7 +68,7 @@ namespace ActionEffectRange.Drawing.Types
                     drawList.PathLineTo(projectedEnd);
                 }
                 drawList.PathStroke(
-                    RingColour, ImDrawFlags.None, Config.Thickness);
+                    RingColour, ImDrawFlags.None, Style.Thickness);
             }
             drawList.PathClear();
         }
@@ -78,7 +78,7 @@ namespace ActionEffectRange.Drawing.Types
             Projection.WorldToScreen(Origin, out var p0);
             Projection.WorldToScreen(End, out var pe);
 #if DEBUG
-            drawList.AddCircleFilled(pe, Config.Thickness * 2, RingColour);
+            drawList.AddCircleFilled(pe, Style.Thickness * 2, RingColour);
 #endif      
 
             var numSegmentsHalf 

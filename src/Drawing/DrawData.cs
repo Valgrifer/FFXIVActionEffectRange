@@ -6,6 +6,7 @@ namespace ActionEffectRange.Drawing
     {
         public readonly uint RingColour;
         public readonly uint FillColour;
+        public DrawStyle Style { get; set; } = DrawStyle.Global;
 
         public DrawData(uint ringColour, uint fillColour)
         {
@@ -71,7 +72,7 @@ namespace ActionEffectRange.Drawing
         {
 #if DEBUG
             Projection.WorldToScreen(farEndWorldPos, out var pe, out var per);
-            drawList.AddCircleFilled(pe, Config.Thickness * 2, RingColour);
+            drawList.AddCircleFilled(pe, Style.Thickness * 2, RingColour);
 #endif
 
             var w2 = width / 2;
@@ -87,10 +88,10 @@ namespace ActionEffectRange.Drawing
             // may be projected to a weird position
             if (p1r.Z < -1 || p2r.Z < -1 || p3r.Z < -1 || p4r.Z < -1) return;
 
-            if (Config.Filled)
+            if (Style.Filled)
                 drawList.AddQuadFilled(p1s, p2s, p3s, p4s, FillColour);
-            if (Config.OuterRing)
-                drawList.AddQuad(p1s, p2s, p3s, p4s, RingColour, Config.Thickness);
+            if (Style.OuterRing)
+                drawList.AddQuad(p1s, p2s, p3s, p4s, RingColour, Style.Thickness);
         }
 
         #endregion

@@ -44,16 +44,16 @@ namespace ActionEffectRange.Drawing.Types
         {
 #if DEBUG
             Projection.WorldToScreen(End, out var pe, out _);
-            drawList.AddCircleFilled(pe, Config.Thickness * 2, 
+            drawList.AddCircleFilled(pe, Style.Thickness * 2, 
                 RingColour);
             Projection.WorldToScreen(End2, out var pe2, out _);
-            drawList.AddCircleFilled(pe2, Config.Thickness * 2, 
+            drawList.AddCircleFilled(pe2, Style.Thickness * 2, 
                 ImGui.ColorConvertFloat4ToU32(new(0,0,1,1)));
             Projection.WorldToScreen(CrossEnd, out var pc, out _);
-            drawList.AddCircleFilled(pc, Config.Thickness * 2, 
+            drawList.AddCircleFilled(pc, Style.Thickness * 2, 
                 ImGui.ColorConvertFloat4ToU32(new(1, 0, 0, 1)));
             Projection.WorldToScreen(CrossEnd2, out var pc2, out _);
-            drawList.AddCircleFilled(pc2, Config.Thickness * 2, 
+            drawList.AddCircleFilled(pc2, Style.Thickness * 2, 
                 ImGui.ColorConvertFloat4ToU32(new(1, 1, 0, 1)));
 #endif
             // TODO: Making the shapes not overlapped

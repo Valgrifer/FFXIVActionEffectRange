@@ -1,4 +1,5 @@
-﻿using ActionEffectRange.Actions.EffectRange;
+﻿using ActionEffectRange.Actions.Data;
+using ActionEffectRange.Actions.EffectRange;
 using ActionEffectRange.Helpers;
 using Dalamud.Bindings.ImGui;
 using System.Collections.Generic;
@@ -85,9 +86,12 @@ namespace ActionEffectRange.Drawing.Workers
             LogUserDebug($"{GetType().Name}.QueueDrawing => " +
                 $"{effectRangeData}, orig={originPos}, target={targetPos}, rotation={rotation}");
             CheckSequence(sequence);
+            // Keeps the casting colour, but uses the action's custom shape style if any
+            var style = ActionData.TryGetActionStyle(effectRangeData.ActionId, out var custom)
+                && custom != null ? DrawStyle.From(custom) : DrawStyle.Global;
             var drawData = EffectRangeDrawing.GenerateDrawData(
                 effectRangeData, castingRingColour, castingFillColour,
-                originPos, targetPos, rotation);
+                originPos, targetPos, rotation, style);
             if (drawData != null) drawDataQueue.Enqueue(drawData);
         }
 

@@ -39,15 +39,15 @@ namespace ActionEffectRange.Drawing.Types
                 }
             }
 
-            if (Config.Filled 
+            if (Style.Filled 
                 && (Config.LargeDrawOpt == 0 || Radius < Config.LargeThreshold))
             {
                 drawList.PathFillConvex(FillColour);
                 foreach (var p in points)
                     if (!float.IsNaN(p.X)) drawList.PathLineTo(p);
             }
-            if (Config.OuterRing)
-                drawList.PathStroke(RingColour, ImDrawFlags.Closed, Config.Thickness);
+            if (Style.OuterRing)
+                drawList.PathStroke(RingColour, ImDrawFlags.Closed, Style.Thickness);
             drawList.PathClear();
         }
     }

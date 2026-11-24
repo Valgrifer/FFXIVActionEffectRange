@@ -117,7 +117,7 @@ namespace ActionEffectRange
                     InternalName = "ActionEffectRangeConfig",
                     Title = "ActionEffectRange",
                     Subtitle = "Configuration",
-                    Size = new Vector2(520, 560),
+                    Size = new Vector2(560, 620),
                 };
             }
             catch (Exception e)

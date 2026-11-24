@@ -17,6 +17,6 @@
   ],
   "ImageUrls": "",
   "IconUrl": "",
-  "Changelog": "Update: Dalamud API15 compatibility (patch 7.x); new native configuration window",
+  "Changelog": "Update: Dalamud API15 compatibility (patch 7.x); new native configuration window; custom drawing style per class/job AoE action",
   "DalamudApiLevel": 15
 }

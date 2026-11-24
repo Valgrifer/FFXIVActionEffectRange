@@ -17,6 +17,7 @@ namespace ActionEffectRange.Actions.Data
             = new(Config);
         private static readonly ConeAoeAngleOverridingList coneAoeOverridingList
             = new(Config);
+        private static readonly ActionStyleList actionStyleList = new(Config);
 
 
         #region Data sheet related
@@ -83,6 +84,7 @@ namespace ActionEffectRange.Actions.Data
             actionBlacklist.Reload();
             aoeTypeOverridingList.Reload();
             coneAoeOverridingList.Reload();
+            actionStyleList.Reload();
         }
 
         public static void SaveCustomisedData(bool writeToFile = false)
@@ -90,6 +92,7 @@ namespace ActionEffectRange.Actions.Data
             actionBlacklist.Save(writeToFile);
             aoeTypeOverridingList.Save(writeToFile);
             coneAoeOverridingList.Save(writeToFile);
+            actionStyleList.Save(writeToFile);
         }
 
         public static bool AddToActionBlacklist(uint actionId)
@@ -121,10 +124,22 @@ namespace ActionEffectRange.Actions.Data
         public static IEnumerable<ConeAoEAngleDataItem> GetCustomisedConeAoEAngleListCopy()
             => coneAoeOverridingList.CopyCustomised();
 
+        public static void SetActionStyle(ActionStyleDataItem item)
+            => actionStyleList.Set(item);
+
+        public static bool RemoveFromActionStyleList(uint actionId)
+            => actionStyleList.Remove(actionId);
+
+        public static IEnumerable<ActionStyleDataItem> GetCustomisedActionStyleListCopy()
+            => actionStyleList.CopyCustomised();
+
         #endregion
 
 
         #region Overriding processing 
+
+        public static bool TryGetActionStyle(uint actionId, out ActionStyleDataItem? item)
+            => actionStyleList.TryGet(actionId, out item);
 
         public static bool IsActionBlacklisted(uint actionId)
             => actionBlacklist.Contains(actionId);

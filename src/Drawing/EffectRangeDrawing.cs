@@ -80,6 +80,16 @@ namespace ActionEffectRange.Drawing
         
         public static DrawData? GenerateDrawData(
             EffectRangeData effectRangeData, uint ringCol, uint fillCol,
+            Vector3 originPos, Vector3 targetPos, float rotation, DrawStyle style)
+        {
+            var drawData = GenerateDrawData(effectRangeData, ringCol, fillCol,
+                originPos, targetPos, rotation);
+            if (drawData != null) drawData.Style = style;
+            return drawData;
+        }
+
+        private static DrawData? GenerateDrawData(
+            EffectRangeData effectRangeData, uint ringCol, uint fillCol,
             Vector3 originPos, Vector3 targetPos, float rotation)
         {
             switch (effectRangeData)
