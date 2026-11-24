@@ -15,7 +15,9 @@ namespace ActionEffectRange.UI
     // Native (in-game addon) configuration window, built with KamiToolKit
     public class ConfigWindow : NativeAddon
     {
-        private const float ListHeight = 250.0f;
+        private const float TabPadding = 10.0f;
+        private const float ItemSpacing = 3.0f;
+        private const float CategorySpacing = 14.0f;
         private static readonly float[] RowRatios = [0.55f, 0.45f];
 
         private ActionSearchAddon? searchAddon;
@@ -37,11 +39,11 @@ namespace ActionEffectRange.UI
 
             var root = NativeUiBuilder.Create(ContentSize, ContentStartPosition, b => b
                 .TabbedContent(tabs => tabs
-                    .AddTab("General", BuildGeneralTab)
-                    .AddTab("Style", BuildStyleTab)
-                    .AddTab("Casting", BuildCastingTab)
-                    .AddTab("Blacklist", BuildBlacklistTab)
-                    .AddTab("Cone AoEs", BuildConeTab)));
+                    .AddTab("General", Padded(BuildGeneralTab))
+                    .AddTab("Style", Padded(BuildStyleTab))
+                    .AddTab("Casting", Padded(BuildCastingTab))
+                    .AddTab("Blacklist", Padded(BuildBlacklistTab))
+                    .AddTab("Cone AoEs", Padded(BuildConeTab))));
             ((NodeBase)root).AttachNode(this);
         }
 
@@ -78,7 +80,7 @@ namespace ActionEffectRange.UI
         private void BuildGeneralTab(NodeBuilder b) => b
             .Checkbox("Enable plugin", Config.Enabled, v => Set(() => Config.Enabled = v))
             .Checkbox("Enable in PvP zones", Config.EnabledPvP, v => Set(() => Config.EnabledPvP = v))
-            .Spacer(6)
+            .Spacer(CategorySpacing)
             .CategoryLabel("Actions to draw")
             .Checkbox("Beneficial actions", Config.DrawBeneficial,
                 v => Set(() => Config.DrawBeneficial = v),
@@ -102,7 +104,7 @@ namespace ActionEffectRange.UI
                     $"\"{ActionData.GetActionCategoryName(ActionCategory.Artillery)}\"\n" +
                     "(duty actions, mounts, transformations...).\n" +
                     "Drawing for these actions may be very inaccurate."))
-            .Spacer(6)
+            .Spacer(CategorySpacing)
             .CategoryLabel("Large effect ranges")
             .Row("Circle/donut AoEs", r => r.Combo(
                     Enumerable.Range(0, Configuration.LargeDrawOptions.Length).ToList(),
@@ -115,7 +117,7 @@ namespace ActionEffectRange.UI
                     v => Set(() => Config.LargeThreshold = v),
                     n => Tooltip(n, "E.g. with 15, Medica and Medica II are affected, but not Cure III.")),
                 RowRatios)
-            .Spacer(6)
+            .Spacer(CategorySpacing)
             .CategoryLabel("Debug")
             .Checkbox("Log debug info to the Dalamud log", Config.LogDebug,
                 v => Set(() => Config.LogDebug = v));
@@ -126,7 +128,7 @@ namespace ActionEffectRange.UI
                 v => Set(() => Config.BeneficialColour = v))
             .ColorEdit4("Harmful actions", Config.HarmfulColour, new Vector4(1, .5f, .5f, 1),
                 v => Set(() => Config.HarmfulColour = v))
-            .Spacer(6)
+            .Spacer(CategorySpacing)
             .CategoryLabel("Shape")
             .Checkbox("Draw outline (outer ring)", Config.OuterRing,
                 v => Set(() => Config.OuterRing = v))
@@ -142,7 +144,7 @@ namespace ActionEffectRange.UI
                     Config.NumSegments, 40, 500, v => Set(() => Config.NumSegments = v),
                     n => Tooltip(n, "The larger the number, the smoother the shapes.")),
                 RowRatios)
-            .Spacer(6)
+            .Spacer(CategorySpacing)
             .CategoryLabel("Timing")
             .Row("Delay before drawing (s)", r => r.FloatSlider(
                     Config.DrawDelay, 0, 2, v => Set(() => Config.DrawDelay = v),
@@ -164,24 +166,23 @@ namespace ActionEffectRange.UI
                 v => Set(() => Config.DrawWhenCastingUntilCastEnd = v),
                 n => Tooltip(n, "Otherwise the drawing is removed after the duration set in Style > Timing."));
 
+        // Lists fill the remaining height below them, so they are always added last
         private void BuildBlacklistTab(NodeBuilder b) => b
             .TextWrapped("Actions in this list are never drawn.", 1)
-            .List<ActionEntry, ActionListItemNode>(BlacklistEntries(),
-                e => selectedBlacklisted = e, out blacklistNode,
-                n => n.Height = ListHeight)
             .Spacer(4)
             .HorizontalList(h => h
                 .TextButton("Add actions...", () => OpenActionSearch("Blacklist actions", AddToBlacklist),
                     n => n.Width = 140)
                 .TextButton("Remove selected", RemoveFromBlacklist, n => n.Width = 140),
-                n => n.Height = 26);
+                n => { n.Height = 26; ((LayoutListNode)n).ItemSpacing = 6; })
+            .Spacer(4)
+            .List<ActionEntry, ActionListItemNode>(BlacklistEntries(),
+                e => selectedBlacklisted = e, out blacklistNode,
+                n => n.PlaceholderString = "No blacklisted action.");
 
         private void BuildConeTab(NodeBuilder b) => b
             .TextWrapped("Override the central angle and rotation of cone AoEs\n" +
                 "whose default drawing is wrong.", 2)
-            .List<ActionEntry, ActionListItemNode>(ConeEntries(),
-                OnConeSelected, out coneListNode,
-                n => n.Height = ListHeight - 60)
             .Spacer(4)
             .Row("Central angle (degrees)", r => r.InputInt(
                     coneAngleDeg, 1, 360, v => coneAngleDeg = v, out coneAngleInput),
@@ -197,7 +198,11 @@ namespace ActionEffectRange.UI
                     n => n.Width = 120)
                 .TextButton("Apply to selected", ApplyToSelectedCone, n => n.Width = 140)
                 .TextButton("Remove selected", RemoveCone, n => n.Width = 140),
-                n => n.Height = 26);
+                n => { n.Height = 26; ((LayoutListNode)n).ItemSpacing = 6; })
+            .Spacer(4)
+            .List<ActionEntry, ActionListItemNode>(ConeEntries(),
+                OnConeSelected, out coneListNode,
+                n => n.PlaceholderString = "No customised cone AoE.");
 
         #endregion
 
@@ -311,6 +316,9 @@ namespace ActionEffectRange.UI
             };
             searchAddon.Open();
         }
+
+        private static PaddedContentNode Padded(Action<NodeBuilder> build)
+            => new(build, TabPadding, ItemSpacing);
 
         private static void Set(Action apply)
         {
