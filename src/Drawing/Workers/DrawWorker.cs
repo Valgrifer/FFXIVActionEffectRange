@@ -77,6 +77,28 @@ namespace ActionEffectRange.Drawing.Workers
                     originPos, targetPos, rotation, style);
         }
 
+        // Test drawing from the config UI: drawn whatever the harmful/beneficial
+        // options, with the action's custom style if any
+        public void QueueTestDrawing(EffectRangeData effectRangeData,
+            Vector3 originPos, Vector3 targetPos, float rotation)
+        {
+            if (ActionData.TryGetActionStyle(effectRangeData.ActionId, out var custom)
+                && custom != null)
+            {
+                Enqueue(effectRangeData,
+                    ImGui.ColorConvertFloat4ToU32(custom.Colour),
+                    ImGui.ColorConvertFloat4ToU32(new(custom.Colour.X,
+                        custom.Colour.Y, custom.Colour.Z, custom.FillAlpha)),
+                    originPos, targetPos, rotation, DrawStyle.From(custom));
+                return;
+            }
+            var beneficial = effectRangeData.Harmfulness == ActionHarmfulness.Beneficial;
+            Enqueue(effectRangeData,
+                beneficial ? beneficialRingColour : harmfulRingColour,
+                beneficial ? beneficialFillColour : harmfulFillColour,
+                originPos, targetPos, rotation, DrawStyle.Global);
+        }
+
         private void Enqueue(EffectRangeData effectRangeData, uint ringColour,
             uint fillColour, Vector3 originPos, Vector3 targetPos, float rotation,
             DrawStyle style)

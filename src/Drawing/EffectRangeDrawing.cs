@@ -1,4 +1,5 @@
-﻿using ActionEffectRange.Actions.EffectRange;
+﻿using ActionEffectRange.Actions;
+using ActionEffectRange.Actions.EffectRange;
 using ActionEffectRange.Drawing.Types;
 using ActionEffectRange.Drawing.Workers;
 using Dalamud.Interface.Utility;
@@ -78,6 +79,22 @@ namespace ActionEffectRange.Drawing
                         originPos, targetPos, rotation);
             });
         
+        // Draw an action's effect range as if the local player had just used it
+        //  on themselves (centred on / facing from the player)
+        public static bool DrawTest(uint actionId)
+        {
+            var player = ObjectTable.LocalPlayer;
+            if (!IsPlayerLoaded || player == null) return false;
+            var erdata = EffectRangeDataManager.NewData(actionId);
+            if (erdata == null) return false;
+            erdata = EffectRangeDataManager.CustomiseEffectRangeData(erdata);
+            foreach (var worker in workers)
+                if (worker is DrawWorker drawWorker)
+                    drawWorker.QueueTestDrawing(erdata,
+                        player.Position, player.Position, player.Rotation);
+            return true;
+        }
+
         public static DrawData? GenerateDrawData(
             EffectRangeData effectRangeData, uint ringCol, uint fillCol,
             Vector3 originPos, Vector3 targetPos, float rotation, DrawStyle style)

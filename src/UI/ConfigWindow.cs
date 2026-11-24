@@ -37,17 +37,7 @@ namespace ActionEffectRange.UI
 
         private ListNode<ActionEntry, ActionListItemNode>? styleListNode;
         private ActionEntry? selectedStyled;
-        // Values shown in the style editor: the selected action's style,
-        // or the style given to newly added actions when none is selected
-        private ActionStyleDataItem editedStyle = DefaultActionStyle();
-        private bool loadingStyle;
-        private CategoryTextNode? styleEditingNode;
-        private ColorEditNode? styleColourNode;
-        private CheckboxNode? styleFilledNode;
-        private FloatSliderNode? styleFillAlphaNode;
-        private CheckboxNode? styleOuterRingNode;
-        private SliderNode? styleThicknessNode;
-        private FloatSliderNode? stylePersistNode;
+        private ActionStyleEditorWindow? styleEditor;
 
         protected override unsafe void OnSetup(AtkUnitBase* addon, Span<AtkValue> atkValueSpan)
         {
@@ -74,7 +64,7 @@ namespace ActionEffectRange.UI
             ListHelpers.EnsureMinScrollThumb(blacklistNode);
             ListHelpers.EnsureMinScrollThumb(coneListNode);
             ListHelpers.EnsureMinScrollThumb(styleListNode);
-            SelectStyledAction(null);
+            selectedStyled = null;
         }
 
         protected override unsafe void OnFinalize(AtkUnitBase* addon)
@@ -87,13 +77,6 @@ namespace ActionEffectRange.UI
             selectedCone = null;
             styleListNode = null;
             selectedStyled = null;
-            styleEditingNode = null;
-            styleColourNode = null;
-            styleFilledNode = null;
-            styleFillAlphaNode = null;
-            styleOuterRingNode = null;
-            styleThicknessNode = null;
-            stylePersistNode = null;
             ActionData.SaveCustomisedData(writeToFile: true);
             base.OnFinalize(addon);
         }
@@ -102,6 +85,8 @@ namespace ActionEffectRange.UI
         {
             searchAddon?.Dispose();
             searchAddon = null;
+            styleEditor?.Dispose();
+            styleEditor = null;
             base.Dispose();
             GC.SuppressFinalize(this);
         }
@@ -110,6 +95,8 @@ namespace ActionEffectRange.UI
         {
             if (searchAddon != null) await searchAddon.DisposeAsync();
             searchAddon = null;
+            if (styleEditor != null) await styleEditor.DisposeAsync();
+            styleEditor = null;
             await base.DisposeAsync();
             GC.SuppressFinalize(this);
         }
@@ -171,27 +158,25 @@ namespace ActionEffectRange.UI
             .CategoryLabel("Shape")
             .Checkbox("Draw outline (outer ring)", Config.OuterRing,
                 v => Set(() => Config.OuterRing = v))
-            .Row("Outline thickness", r => r.IntSlider(
-                    Config.Thickness, 1, 50, v => Set(() => Config.Thickness = v)),
+            .Row("Outline thickness", r => r.SliderInput(
+                    Config.Thickness, 1, 50, 1, 0, v => Set(() => Config.Thickness = (int)v)),
                 RowRatios)
             .Checkbox("Fill", Config.Filled, v => Set(() => Config.Filled = v))
-            .Row("Fill opacity", r => r.FloatSlider(
-                    Config.FillAlpha, 0, 1, v => Set(() => Config.FillAlpha = v),
-                    n => n.Step = .01f),
+            .Row("Fill opacity", r => r.SliderInput(
+                    Config.FillAlpha, 0, ActionStyleEditorWindow.MaxFillAlpha, .01f, 2,
+                    v => Set(() => Config.FillAlpha = v)),
                 RowRatios)
-            .Row("Smoothness (segments)", r => r.IntSlider(
-                    Config.NumSegments, 40, 500, v => Set(() => Config.NumSegments = v),
-                    n => Tooltip(n, "The larger the number, the smoother the shapes.")),
+            .Row("Smoothness (segments)", r => r.SliderInput(
+                    Config.NumSegments, 40, 500, 1, 0, v => Set(() => Config.NumSegments = (int)v),
+                    n => Tooltip(n.Slider, "The larger the number, the smoother the shapes.")),
                 RowRatios)
             .Spacer(CategorySpacing)
             .CategoryLabel("Timing")
-            .Row("Delay before drawing (s)", r => r.FloatSlider(
-                    Config.DrawDelay, 0, 2, v => Set(() => Config.DrawDelay = v),
-                    n => n.Step = .05f),
+            .Row("Delay before drawing (s)", r => r.SliderInput(
+                    Config.DrawDelay, 0, 2, .05f, 2, v => Set(() => Config.DrawDelay = v)),
                 RowRatios)
-            .Row("Keep drawn for (s)", r => r.FloatSlider(
-                    Config.PersistSeconds, .1f, 5, v => Set(() => Config.PersistSeconds = v),
-                    n => n.Step = .1f),
+            .Row("Keep drawn for (s)", r => r.SliderInput(
+                    Config.PersistSeconds, .1f, 5, .1f, 1, v => Set(() => Config.PersistSeconds = v)),
                 RowRatios);
 
         private void BuildCastingTab(NodeBuilder b) => b
@@ -244,69 +229,31 @@ namespace ActionEffectRange.UI
                 OnConeSelected, out coneListNode,
                 n => n.PlaceholderString = "No customised cone AoE.");
 
-        // The style editor only edits the action selected in the list
         private void BuildActionStyleTab(NodeBuilder b) => b
             .TextWrapped("Custom drawing style per class/job AoE action, replacing the\n" +
-                "global colours and style for that action only.", 2)
+                "global colours and style. Click an action to edit its style.", 2)
             .Spacer(4)
             .HorizontalList(h => h
                 .TextButton("Add actions...", () => OpenActionSearch("Class/job AoE actions",
                         AddStyledActions, IsClassJobAoEAction),
-                    n => n.Width = 140)
+                    n => n.Width = 130)
+                .TextButton("Edit selected", () => OpenStyleEditor(selectedStyled),
+                    n => n.Width = 130)
                 .TextButton("Remove selected", RemoveStyledAction, n => n.Width = 140),
                 n => { n.Height = 26; ((LayoutListNode)n).ItemSpacing = 6; })
-            .Spacer(CategorySpacing)
-            .CategoryLabel(NoStyleSelectedLabel, out styleEditingNode)
-            .ColorEdit4("Colour", editedStyle.Colour, null,
-                v => EditStyle(s => s.Colour = v), out styleColourNode)
-            .Checkbox("Fill", editedStyle.Filled,
-                v => EditStyle(s => s.Filled = v), out styleFilledNode)
-            .Row("Fill opacity", r => r.FloatSlider(
-                    editedStyle.FillAlpha, 0, 1, v => EditStyle(s => s.FillAlpha = v),
-                    out styleFillAlphaNode, n => n.Step = .01f),
-                RowRatios)
-            .Checkbox("Draw outline (outer ring)", editedStyle.OuterRing,
-                v => EditStyle(s => s.OuterRing = v), out styleOuterRingNode)
-            .Row("Outline thickness", r => r.IntSlider(
-                    editedStyle.Thickness, 1, 50, v => EditStyle(s => s.Thickness = v),
-                    out styleThicknessNode),
-                RowRatios)
-            .Row("Keep drawn for (s)", r => r.FloatSlider(
-                    editedStyle.PersistSeconds, .1f, 5, v => EditStyle(s => s.PersistSeconds = v),
-                    out stylePersistNode, n => n.Step = .1f),
-                RowRatios)
-            .Spacer(CategorySpacing)
+            .Spacer(4)
             .List<ActionEntry, ActionListItemNode>(StyleEntries(),
-                OnStyledActionSelected, out styleListNode,
+                OnStyledActionClicked, out styleListNode,
                 n => n.PlaceholderString = "No action with a custom style.");
 
         #endregion
 
         #region Action styles data
 
-        private const string NoStyleSelectedLabel = "Select an action below to edit its style";
-
         // AoE actions tied to a class/job, including role actions
         // (e.g. Reprisal: no single class/job, but a class/job category)
         private static bool IsClassJobAoEAction(Lumina.Excel.Sheets.Action row)
             => row.EffectRange > 0 && (row.ClassJobCategory.RowId > 1 || row.IsPvP);
-
-        private static ActionStyleDataItem DefaultActionStyle(uint actionId = 0)
-        {
-            var row = ActionData.GetActionExcelRow(actionId);
-            var beneficial = row != null
-                && ActionData.GetActionHarmfulness(row.Value) == ActionHarmfulness.Beneficial;
-            return new()
-            {
-                ActionId = actionId,
-                Colour = beneficial ? Config.BeneficialColour : Config.HarmfulColour,
-                Filled = Config.Filled,
-                FillAlpha = Config.FillAlpha,
-                OuterRing = Config.OuterRing,
-                Thickness = Config.Thickness,
-                PersistSeconds = Config.PersistSeconds,
-            };
-        }
 
         private static List<ActionEntry> StyleEntries()
             => ActionData.GetCustomisedActionStyleListCopy()
@@ -314,62 +261,32 @@ namespace ActionEffectRange.UI
                 .OrderBy(e => e.Description, StringComparer.CurrentCultureIgnoreCase)
                 .ThenBy(e => e.ActionId).ToList();
 
-        private void EditStyle(Action<ActionStyleDataItem> apply)
-        {
-            if (loadingStyle) return;
-            if (selectedStyled == null)
-            {
-                // Nothing to edit: put the controls back
-                ShowEditedStyle();
-                return;
-            }
-            apply(editedStyle);
-            ActionData.SetActionStyle(editedStyle.CopyFor(selectedStyled.ActionId));
-            SaveCustomised();
-        }
-
-        private void OnStyledActionSelected(ActionEntry? entry)
-        {
-            // Clicking the selected row again deselects it
-            var selected = entry != null && styleListNode != null
-                && styleListNode.SelectedOptions.Contains(entry);
-            SelectStyledAction(selected ? entry : null);
-        }
-
-        private void SelectStyledAction(ActionEntry? entry)
+        private void OnStyledActionClicked(ActionEntry? entry)
         {
             selectedStyled = entry;
-            editedStyle = entry != null
-                && ActionData.TryGetActionStyle(entry.ActionId, out var item) && item != null
-                ? item.CopyFor(entry.ActionId) : DefaultActionStyle();
-            ShowEditedStyle();
+            OpenStyleEditor(entry);
         }
 
-        private void ShowEditedStyle()
+        // One editor window at a time, for the clicked action
+        private void OpenStyleEditor(ActionEntry? entry)
         {
-            var enabled = selectedStyled != null;
-            loadingStyle = true;
-            try
+            if (entry == null) return;
+            CloseStyleEditor();
+            styleEditor = new ActionStyleEditorWindow
             {
-                styleEditingNode?.String = enabled
-                    ? $"Style of {selectedStyled!.Description}" : NoStyleSelectedLabel;
-                styleColourNode?.CurrentColor = editedStyle.Colour;
-                styleFilledNode?.IsChecked = editedStyle.Filled;
-                styleFillAlphaNode?.SetValueSilent(editedStyle.FillAlpha);
-                styleOuterRingNode?.IsChecked = editedStyle.OuterRing;
-                styleThicknessNode?.SetValueSilent(editedStyle.Thickness);
-                stylePersistNode?.SetValueSilent(editedStyle.PersistSeconds);
-                styleColourNode?.IsEnabled = enabled;
-                styleFilledNode?.IsEnabled = enabled;
-                styleFillAlphaNode?.IsEnabled = enabled;
-                styleOuterRingNode?.IsEnabled = enabled;
-                styleThicknessNode?.IsEnabled = enabled;
-                stylePersistNode?.IsEnabled = enabled;
-            }
-            finally
-            {
-                loadingStyle = false;
-            }
+                ActionId = entry.ActionId,
+                InternalName = "AERActionStyleEditor",
+                Title = "Action style",
+                Subtitle = entry.Description,
+                Size = new Vector2(420, 300),
+            };
+            styleEditor.Open();
+        }
+
+        private void CloseStyleEditor()
+        {
+            styleEditor?.Dispose();
+            styleEditor = null;
         }
 
         // Added actions start from the global style, then are edited one by one
@@ -377,7 +294,7 @@ namespace ActionEffectRange.UI
         {
             foreach (var e in entries)
                 if (!ActionData.TryGetActionStyle(e.ActionId, out _))
-                    ActionData.SetActionStyle(DefaultActionStyle(e.ActionId));
+                    ActionData.SetActionStyle(ActionStyleEditorWindow.DefaultStyle(e.ActionId));
             SaveCustomised();
             RefreshLists();
         }
@@ -385,6 +302,7 @@ namespace ActionEffectRange.UI
         private void RemoveStyledAction()
         {
             if (selectedStyled == null) return;
+            if (styleEditor?.ActionId == selectedStyled.ActionId) CloseStyleEditor();
             ActionData.RemoveFromActionStyleList(selectedStyled.ActionId);
             SaveCustomised();
             RefreshLists();
@@ -475,7 +393,7 @@ namespace ActionEffectRange.UI
             ListHelpers.EnsureMinScrollThumb(blacklistNode);
             ListHelpers.EnsureMinScrollThumb(coneListNode);
             ListHelpers.EnsureMinScrollThumb(styleListNode);
-            SelectStyledAction(null);
+            selectedStyled = null;
         }
 
         private static void SaveCustomised()
