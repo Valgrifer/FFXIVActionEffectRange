@@ -45,3 +45,16 @@ Once added, look for the plugin "ActionEffectRange" in Plugin Installer's availa
 - Dancer's "Curing Waltz" (PvE #16015, PvP #29429): Not showing effect range for additional effect (AoE heal around partner)
 - Ninja's "Hollow Nozuchi" (#25776): Not showing effect range on Doton area
 - Reaper's "Arcane Crest" (#24404): Not showing effect range when the barrier effect is triggered
+
+
+## Building
+
+Requires the .NET 10 SDK and a local Dalamud (API15) installation; the project uses
+`Dalamud.NET.Sdk`, which locates Dalamud automatically
+(`%AppData%\XIVLauncher\addon\Hooks\dev` on Windows, `~/.xlcore/dalamud/Hooks/dev` on Linux,
+or the `DALAMUD_HOME` environment variable).
+
+```sh
+dotnet build -c Release   # bin/x64/Release/ActionEffectRange/latest.zip
+dotnet build -c Debug     # dev build
+```
