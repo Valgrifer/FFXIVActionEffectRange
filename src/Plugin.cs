@@ -82,6 +82,7 @@ namespace ActionEffectRange
         {
             Config = PluginInterface.GetPluginConfig() as Configuration 
                 ?? new Configuration();
+            Config.Migrate();
 
             InitializeCommands();
 

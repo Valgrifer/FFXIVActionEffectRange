@@ -4,6 +4,9 @@ using Sheets = Lumina.Excel.Sheets;
 
 namespace ActionEffectRange.Helpers
 {
+    // Pets grouped by the job of their owner, for the pet drawing options
+    public enum PetGroup { None, AcnSmn, Sch, Mch, Drk, Other }
+
     internal static class PetWatcher
     {
         private static readonly ExcelSheet<Sheets.Pet> petSheet
@@ -52,6 +55,21 @@ namespace ActionEffectRange.Helpers
         public static bool IsCurrentPetNonACNNamedPet()
             => !IsCurrentPetNamelessOrBunshin()
             && !ClassJobWatcher.IsCurrentClassJobACNRelated();
+
+        // Group of the current named pet; None for nameless pets (ground placed
+        //  objects, handled by the ground-targeted option) and NIN's bunshin
+        public static PetGroup GetCurrentPetGroup()
+        {
+            if (!HasPetPresent || IsCurrentPetNamelessOrBunshin()) return PetGroup.None;
+            return ClassJobWatcher.CurrentClassJobId switch
+            {
+                26 or 27 => PetGroup.AcnSmn,    // ACN, SMN
+                28 => PetGroup.Sch,
+                31 => PetGroup.Mch,
+                32 => PetGroup.Drk,
+                _ => PetGroup.Other,
+            };
+        }
 
         public static bool IsCurrentPet(uint objectId)
             => GetPetObjectId() == objectId;

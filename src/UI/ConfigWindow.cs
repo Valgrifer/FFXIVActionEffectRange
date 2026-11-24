@@ -50,9 +50,9 @@ namespace ActionEffectRange.UI
                     .AddTab("General", Padded(BuildGeneralTab))
                     .AddTab("Style", Padded(BuildStyleTab))
                     .AddTab("Casting", Padded(BuildCastingTab))
+                    .AddTab("Action styles", Padded(BuildActionStyleTab))
                     .AddTab("Blacklist", Padded(BuildBlacklistTab))
-                    .AddTab("Cone AoEs", Padded(BuildConeTab))
-                    .AddTab("Action styles", Padded(BuildActionStyleTab))));
+                    .AddTab("Cone AoEs", Padded(BuildConeTab))));
             ((NodeBase)root).AttachNode(this);
         }
 
@@ -135,13 +135,6 @@ namespace ActionEffectRange.UI
             .Checkbox("Harmful actions", Config.DrawHarmful,
                 v => Set(() => Config.DrawHarmful = v),
                 n => Tooltip(n, "Draw the effect range of actions with harmful effects,\nsuch as attacks and debuffs."))
-            .Checkbox("ACN/SMN/SCH pets' actions", Config.DrawACNPets,
-                v => Set(() => Config.DrawACNPets = v),
-                n => Tooltip(n, "Also draw the AoE actions used by your Arcanist/Summoner/Scholar pet."))
-            .Checkbox("Other summoned companions' actions", Config.DrawSummonedCompanions,
-                v => Set(() => Config.DrawSummonedCompanions = v),
-                n => Tooltip(n, "Also draw the actions of companions with a model summoned\n" +
-                    "while not Arcanist/Summoner/Scholar, e.g. MCH's autoturrets."))
             .Checkbox("Ground-targeted actions", Config.DrawGT,
                 v => Set(() => Config.DrawGT = v))
             .Checkbox("Special/Artillery actions", Config.DrawEx,
@@ -151,6 +144,22 @@ namespace ActionEffectRange.UI
                     $"\"{ActionData.GetActionCategoryName(ActionCategory.Artillery)}\"\n" +
                     "(duty actions, mounts, transformations...).\n" +
                     "Drawing for these actions may be very inaccurate."))
+            .Spacer(CategorySpacing)
+            .CategoryLabel("Pets")
+            .TextWrapped("Also draw the AoE actions of your pet or summoned companion,\n" +
+                "depending on your current job (e.g. MCH: Automaton Queen, DRK: Esteem).", 2)
+            .HorizontalList(h => h
+                .Checkbox("ACN/SMN", Config.DrawPetsAcnSmn,
+                    v => Set(() => Config.DrawPetsAcnSmn = v), n => ((NodeBase)n).Width = 110)
+                .Checkbox("SCH", Config.DrawPetsSch,
+                    v => Set(() => Config.DrawPetsSch = v), n => ((NodeBase)n).Width = 75)
+                .Checkbox("MCH", Config.DrawPetsMch,
+                    v => Set(() => Config.DrawPetsMch = v), n => ((NodeBase)n).Width = 75)
+                .Checkbox("DRK", Config.DrawPetsDrk,
+                    v => Set(() => Config.DrawPetsDrk = v), n => ((NodeBase)n).Width = 75)
+                .Checkbox("Other", Config.DrawPetsOther,
+                    v => Set(() => Config.DrawPetsOther = v), n => ((NodeBase)n).Width = 85),
+                n => { n.Height = 24; ((LayoutListNode)n).ItemSpacing = 6; })
             .Spacer(CategorySpacing)
             .CategoryLabel("Large effect ranges")
             .Row("Circle/donut AoEs", r => r.Combo(

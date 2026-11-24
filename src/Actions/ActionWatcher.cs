@@ -372,17 +372,11 @@ namespace ActionEffectRange.Actions
                     var pet = PetWatcher.GetPet();
                     if (pet != null && pet.EntityId == casterEntityId)
                     {
-                        if (PetWatcher.IsCurrentPetACNPet() && !Config.DrawACNPets)
+                        var petGroup = PetWatcher.GetCurrentPetGroup();
+                        if (!Config.ShouldDrawPetActions(petGroup))
                         {
                             LogUserDebug($"---Skip: Drawing for action#{actionId} " +
-                                "from ACN/SMN/SCH pets configured OFF");
-                            return;
-                        }
-                        if (PetWatcher.IsCurrentPetNonACNNamedPet()
-                            && !Config.DrawSummonedCompanions)
-                        {
-                            LogUserDebug($"---Skip: Drawing for action#{actionId} " +
-                                "from summoned companions of non-ACN based jobs configured OFF");
+                                $"from {petGroup} pets configured OFF");
                             return;
                         }
                         if (PetWatcher.IsCurrentPetNameless()

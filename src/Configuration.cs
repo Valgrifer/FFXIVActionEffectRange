@@ -6,7 +6,7 @@ namespace ActionEffectRange
     [Serializable]
     public partial class Configuration : IPluginConfiguration
     {
-        public int Version { get; set; } = 1;
+        public int Version { get; set; } = 2;
 
         public bool Enabled = true;
         public bool EnabledPvP = true;
@@ -16,6 +16,14 @@ namespace ActionEffectRange
         public bool DrawHarmful = true;
         public Vector4 HarmfulColour = new(1, .5f, .5f, 1);
 
+        // Pets' actions, by the job of the player (named pets only)
+        public bool DrawPetsAcnSmn = true;
+        public bool DrawPetsSch = true;
+        public bool DrawPetsMch = true;
+        public bool DrawPetsDrk = true;
+        public bool DrawPetsOther = true;
+
+        // Before version 2: replaced by the DrawPets* options above
         public bool DrawACNPets = true;
         public bool DrawSummonedCompanions = true;
         public bool DrawGT = true;
@@ -52,6 +60,29 @@ namespace ActionEffectRange
 
         public bool LogDebug = false;
 
+
+        public bool ShouldDrawPetActions(Helpers.PetGroup group)
+            => group switch
+            {
+                Helpers.PetGroup.AcnSmn => DrawPetsAcnSmn,
+                Helpers.PetGroup.Sch => DrawPetsSch,
+                Helpers.PetGroup.Mch => DrawPetsMch,
+                Helpers.PetGroup.Drk => DrawPetsDrk,
+                Helpers.PetGroup.Other => DrawPetsOther,
+                _ => true,
+            };
+
+        // Bring older saved configurations up to date
+        public void Migrate()
+        {
+            if (Version < 2)
+            {
+                DrawPetsAcnSmn = DrawPetsSch = DrawACNPets;
+                DrawPetsMch = DrawPetsDrk = DrawPetsOther = DrawSummonedCompanions;
+                Version = 2;
+                Save();
+            }
+        }
 
         public void Save()
         {
