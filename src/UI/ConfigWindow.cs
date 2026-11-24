@@ -58,12 +58,21 @@ namespace ActionEffectRange.UI
         {
             base.OnShow(addon);
             // Lists build their rows before they have their final size
+            RebuildLists();
+            // Text inputs are reset when the components are set up
+            SliderInputNode.RefreshAll();
+        }
+
+        private void RebuildLists()
+        {
             blacklistNode?.FullRebuild();
             coneListNode?.FullRebuild();
             styleListNode?.FullRebuild();
             ListHelpers.EnsureMinScrollThumb(blacklistNode);
             ListHelpers.EnsureMinScrollThumb(coneListNode);
             ListHelpers.EnsureMinScrollThumb(styleListNode);
+            selectedBlacklisted = null;
+            selectedCone = null;
             selectedStyled = null;
         }
 
@@ -390,10 +399,9 @@ namespace ActionEffectRange.UI
             blacklistNode?.Options = BlacklistEntries();
             coneListNode?.Options = ConeEntries();
             styleListNode?.Options = StyleEntries();
-            ListHelpers.EnsureMinScrollThumb(blacklistNode);
-            ListHelpers.EnsureMinScrollThumb(coneListNode);
-            ListHelpers.EnsureMinScrollThumb(styleListNode);
-            selectedStyled = null;
+            // Rows that were hidden when the window was set up are not part of the
+            // addon's collision list: rebuild them so new rows can be clicked
+            RebuildLists();
         }
 
         private static void SaveCustomised()

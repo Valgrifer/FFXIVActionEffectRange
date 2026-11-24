@@ -61,6 +61,13 @@ namespace ActionEffectRange.UI
             content.AttachNode(this);
         }
 
+        protected override unsafe void OnShow(AtkUnitBase* addon)
+        {
+            base.OnShow(addon);
+            // Text inputs are reset when the components are set up
+            SliderInputNode.RefreshAll();
+        }
+
         protected override unsafe void OnFinalize(AtkUnitBase* addon)
         {
             colourNode = null;

@@ -2,6 +2,7 @@ using KamiToolKit.Controls.Builders;
 using KamiToolKit.UI.Nodes;
 using KamiToolKit.UI.Nodes.ComponentNode;
 using Lumina.Text.ReadOnly;
+using System.Collections.Generic;
 using System.Globalization;
 
 namespace ActionEffectRange.UI
@@ -11,6 +12,8 @@ namespace ActionEffectRange.UI
     {
         private const float InputWidth = 56.0f;
         private const float Gap = 4.0f;
+
+        private static readonly HashSet<SliderInputNode> Live = new();
 
         private readonly float min;
         private readonly float max;
@@ -48,12 +51,27 @@ namespace ActionEffectRange.UI
             Input = new TextInputNode
             {
                 String = Format(this.value),
-                MaxCharacters = 8,
+                ShowLimitText = false,
                 OnInputComplete = ParseInput,
                 OnUnfocused = () => ParseInput(Input!.String),
             };
             Input.AttachNode(this);
             Size = new Vector2(100.0f, 24.0f);
+            Live.Add(this);
+        }
+
+        // The text set before the owning window is set up gets cleared:
+        // windows call this once shown to display the values again
+        public static void RefreshAll()
+        {
+            foreach (var node in Live)
+                node.Input.SetValueSilent(node.Format(node.value));
+        }
+
+        protected override void Dispose(bool isNativeDestructor)
+        {
+            Live.Remove(this);
+            base.Dispose(isNativeDestructor);
         }
 
         protected override void OnSizeChanged()
@@ -62,6 +80,9 @@ namespace ActionEffectRange.UI
             Slider.Size = new Vector2(MathF.Max(1.0f, Width - InputWidth - Gap), Height);
             Input.Size = new Vector2(InputWidth, Height);
             Input.Position = new Vector2(MathF.Max(0.0f, Width - InputWidth), 0.0f);
+            // The game shows a "length/max" counter behind the value; keep it hidden
+            Input.TextLimitsNode.IsVisible = false;
+            Input.TextLimitsNode.Scale = Vector2.Zero;
         }
 
         private void ParseInput(ReadOnlySeString input)
