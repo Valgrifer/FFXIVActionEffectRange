@@ -16,6 +16,14 @@ namespace ActionEffectRange.UI
             ResultsListNode?.PlaceholderString = "No matching action.";
         }
 
+        // The list builds its rows and scroll params before it has its final size;
+        // rebuild once the window is shown so the first display is laid out properly.
+        protected override unsafe void OnShow(FFXIVClientStructs.FFXIV.Component.GUI.AtkUnitBase* addon)
+        {
+            base.OnShow(addon);
+            ResultsListNode?.FullRebuild();
+        }
+
         protected override void OnSearchInputReceived(ReadOnlySeString searchString)
         {
             var input = searchString.ExtractText().Trim();

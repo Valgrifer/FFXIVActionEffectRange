@@ -2,6 +2,7 @@ using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Core.Interfaces;
 using KamiToolKit.UI;
 using KamiToolKit.UI.Nodes;
+using KamiToolKit.UI.Nodes.ComponentNode;
 using Sheets = Lumina.Excel.Sheets;
 
 namespace ActionEffectRange.UI
@@ -30,14 +31,15 @@ namespace ActionEffectRange.UI
     {
         public static float ItemHeight => 44.0f;
 
-        private readonly IconImageNode iconNode;
+        private readonly IconNode iconNode;
         private readonly TextNode nameNode;
         private readonly TextNode detailNode;
         private readonly TextNode idNode;
 
         public ActionListItemNode()
         {
-            iconNode = new IconImageNode { FitTexture = true };
+            // Native action icon, with the game's icon frame
+            iconNode = new IconNode();
             iconNode.AttachNode(this);
 
             nameNode = new TextNode
@@ -91,7 +93,8 @@ namespace ActionEffectRange.UI
         private void LayoutChildren(ActionEntry? data = null)
         {
             data ??= ItemData;
-            var height = Height > 0 ? Height : ItemHeight;
+            if (Height <= 0) Height = ItemHeight;
+            var height = Height;
             var width = Width;
             if (width <= 0) return;
 

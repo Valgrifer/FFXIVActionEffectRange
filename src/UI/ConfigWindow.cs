@@ -47,6 +47,14 @@ namespace ActionEffectRange.UI
             ((NodeBase)root).AttachNode(this);
         }
 
+        protected override unsafe void OnShow(AtkUnitBase* addon)
+        {
+            base.OnShow(addon);
+            // Lists build their rows before they have their final size
+            blacklistNode?.FullRebuild();
+            coneListNode?.FullRebuild();
+        }
+
         protected override unsafe void OnFinalize(AtkUnitBase* addon)
         {
             blacklistNode = null;
@@ -171,7 +179,8 @@ namespace ActionEffectRange.UI
             .TextWrapped("Actions in this list are never drawn.", 1)
             .Spacer(4)
             .HorizontalList(h => h
-                .TextButton("Add actions...", () => OpenActionSearch("Blacklist actions", AddToBlacklist),
+                .TextButton("Add actions...", () => OpenActionSearch("Blacklist actions", AddToBlacklist,
+                        row => row.EffectRange > 0),
                     n => n.Width = 140)
                 .TextButton("Remove selected", RemoveFromBlacklist, n => n.Width = 140),
                 n => { n.Height = 26; ((LayoutListNode)n).ItemSpacing = 6; })
