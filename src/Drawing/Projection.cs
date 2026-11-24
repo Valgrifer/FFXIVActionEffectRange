@@ -10,7 +10,7 @@ namespace ActionEffectRange.Drawing
             => WorldToScreen(worldPos, out screenPos, out _);
 
         // Same as Dalamud's IGameGui.WorldToScreen, but also returns the raw
-        // clip-space coords so callers can discard points behind the camera.
+        // clip-space coords (X, Y, W as Z) so callers can discard points behind the camera.
         internal static bool WorldToScreen(
             Vector3 worldPos, out Vector2 screenPos, out Vector3 pCoordsRaw)
         {
@@ -29,7 +29,11 @@ namespace ActionEffectRange.Drawing
             float width = device->Width;
             float height = device->Height;
 
-            var pCoords = Vector3.Transform(worldPos, viewProjectionMatrix);
+            // The game uses a reversed-Z infinite projection: clip-space Z is constant,
+            // the depth is in W (> 0 in front of the camera).
+            var clip = Vector4.Transform(worldPos, viewProjectionMatrix);
+            // Callers use .Z as the depth to discard points behind the camera
+            var pCoords = new Vector3(clip.X, clip.Y, clip.W);
             pCoordsRaw = pCoords;
 
             screenPos = new Vector2(
