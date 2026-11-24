@@ -4,11 +4,19 @@
   "Punchline": "Provides a visual cue on the effect range of the AoE action just used.",
   "Description": "This plugin provides a visual cue on the effect range of the AoE action you just used.\n\nMay be used as a supplement/replacement to the actions' VFXs in showing effect range related information, such as where has the action landed and how large an area it covered.",
   "RepoUrl": "https://github.com/yomishino/FFXIVActionEffectRange",
+  "Tags": [
+    "aoe",
+    "range",
+    "combat",
+    "overlay",
+    "visual",
+    "pvp"
+  ],
   "CategoryTags": [
     "UI"
   ],
   "ImageUrls": "",
   "IconUrl": "",
-  "Changelog": "Update: Dalamud API15 compatibility (patch 7.x)",
+  "Changelog": "Update: Dalamud API15 compatibility (patch 7.x); new native configuration window",
   "DalamudApiLevel": 15
 }
