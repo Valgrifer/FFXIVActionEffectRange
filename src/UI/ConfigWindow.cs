@@ -49,7 +49,6 @@ namespace ActionEffectRange.UI
                 .TabbedContent(tabs => tabs
                     .AddTab("General", Padded(BuildGeneralTab))
                     .AddTab("Style", Padded(BuildStyleTab))
-                    .AddTab("Casting", Padded(BuildCastingTab))
                     .AddTab("Action styles", Padded(BuildActionStyleTab))
                     .AddTab("Blacklist", Padded(BuildBlacklistTab))
                     .AddTab("Cone AoEs", Padded(BuildConeTab))));
@@ -219,9 +218,9 @@ namespace ActionEffectRange.UI
                 RowRatios)
             .Row("Keep drawn for (s)", r => r.SliderInput(
                     Config.PersistSeconds, .1f, 30, .1f, 1, v => Set(() => Config.PersistSeconds = v)),
-                RowRatios);
-
-        private void BuildCastingTab(NodeBuilder b) => b
+                RowRatios)
+            .Spacer(CategorySpacing)
+            .CategoryLabel("Casting")
             .Checkbox("Draw while casting", Config.DrawWhenCasting,
                 v => Set(() => Config.DrawWhenCasting = v),
                 n => Tooltip(n, "Also draw the effect range while you are casting an AoE action.\n" +
@@ -230,7 +229,7 @@ namespace ActionEffectRange.UI
                 v => Set(() => Config.DrawWhenCastingColour = v))
             .Checkbox("Keep drawn until the cast ends", Config.DrawWhenCastingUntilCastEnd,
                 v => Set(() => Config.DrawWhenCastingUntilCastEnd = v),
-                n => Tooltip(n, "Otherwise the drawing is removed after the duration set in Style > Timing."));
+                n => Tooltip(n, "Otherwise the drawing is removed after the duration set in Timing."));
 
         // Lists fill the remaining height below them, so they are always added last
         private void BuildBlacklistTab(NodeBuilder b) => b
