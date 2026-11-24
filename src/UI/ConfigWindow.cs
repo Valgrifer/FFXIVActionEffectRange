@@ -41,6 +41,7 @@ namespace ActionEffectRange.UI
         // or the style given to newly added actions when none is selected
         private ActionStyleDataItem editedStyle = DefaultActionStyle();
         private bool loadingStyle;
+        private CategoryTextNode? styleEditingNode;
         private ColorEditNode? styleColourNode;
         private CheckboxNode? styleFilledNode;
         private FloatSliderNode? styleFillAlphaNode;
@@ -73,6 +74,7 @@ namespace ActionEffectRange.UI
             ListHelpers.EnsureMinScrollThumb(blacklistNode);
             ListHelpers.EnsureMinScrollThumb(coneListNode);
             ListHelpers.EnsureMinScrollThumb(styleListNode);
+            SelectStyledAction(null);
         }
 
         protected override unsafe void OnFinalize(AtkUnitBase* addon)
@@ -85,6 +87,7 @@ namespace ActionEffectRange.UI
             selectedCone = null;
             styleListNode = null;
             selectedStyled = null;
+            styleEditingNode = null;
             styleColourNode = null;
             styleFilledNode = null;
             styleFillAlphaNode = null;
@@ -241,10 +244,19 @@ namespace ActionEffectRange.UI
                 OnConeSelected, out coneListNode,
                 n => n.PlaceholderString = "No customised cone AoE.");
 
+        // The style editor only edits the action selected in the list
         private void BuildActionStyleTab(NodeBuilder b) => b
-            .TextWrapped("Custom drawing style for class/job AoE actions, replacing the\n" +
-                "global colours and style. Select an action to edit its style.", 2)
+            .TextWrapped("Custom drawing style per class/job AoE action, replacing the\n" +
+                "global colours and style for that action only.", 2)
             .Spacer(4)
+            .HorizontalList(h => h
+                .TextButton("Add actions...", () => OpenActionSearch("Class/job AoE actions",
+                        AddStyledActions, IsClassJobAoEAction),
+                    n => n.Width = 140)
+                .TextButton("Remove selected", RemoveStyledAction, n => n.Width = 140),
+                n => { n.Height = 26; ((LayoutListNode)n).ItemSpacing = 6; })
+            .Spacer(CategorySpacing)
+            .CategoryLabel(NoStyleSelectedLabel, out styleEditingNode)
             .ColorEdit4("Colour", editedStyle.Colour, null,
                 v => EditStyle(s => s.Colour = v), out styleColourNode)
             .Checkbox("Fill", editedStyle.Filled,
@@ -263,14 +275,7 @@ namespace ActionEffectRange.UI
                     editedStyle.PersistSeconds, .1f, 5, v => EditStyle(s => s.PersistSeconds = v),
                     out stylePersistNode, n => n.Step = .1f),
                 RowRatios)
-            .Spacer(4)
-            .HorizontalList(h => h
-                .TextButton("Add actions...", () => OpenActionSearch("Class/job AoE actions",
-                        AddStyledActions, IsClassJobAoEAction),
-                    n => n.Width = 140)
-                .TextButton("Remove selected", RemoveStyledAction, n => n.Width = 140),
-                n => { n.Height = 26; ((LayoutListNode)n).ItemSpacing = 6; })
-            .Spacer(4)
+            .Spacer(CategorySpacing)
             .List<ActionEntry, ActionListItemNode>(StyleEntries(),
                 OnStyledActionSelected, out styleListNode,
                 n => n.PlaceholderString = "No action with a custom style.");
@@ -279,18 +284,29 @@ namespace ActionEffectRange.UI
 
         #region Action styles data
 
-        private static bool IsClassJobAoEAction(Lumina.Excel.Sheets.Action row)
-            => row.EffectRange > 0 && row.ClassJob.ValueNullable is { RowId: > 0 };
+        private const string NoStyleSelectedLabel = "Select an action below to edit its style";
 
-        private static ActionStyleDataItem DefaultActionStyle() => new()
+        // AoE actions tied to a class/job, including role actions
+        // (e.g. Reprisal: no single class/job, but a class/job category)
+        private static bool IsClassJobAoEAction(Lumina.Excel.Sheets.Action row)
+            => row.EffectRange > 0 && (row.ClassJobCategory.RowId > 1 || row.IsPvP);
+
+        private static ActionStyleDataItem DefaultActionStyle(uint actionId = 0)
         {
-            Colour = Config.HarmfulColour,
-            Filled = Config.Filled,
-            FillAlpha = Config.FillAlpha,
-            OuterRing = Config.OuterRing,
-            Thickness = Config.Thickness,
-            PersistSeconds = Config.PersistSeconds,
-        };
+            var row = ActionData.GetActionExcelRow(actionId);
+            var beneficial = row != null
+                && ActionData.GetActionHarmfulness(row.Value) == ActionHarmfulness.Beneficial;
+            return new()
+            {
+                ActionId = actionId,
+                Colour = beneficial ? Config.BeneficialColour : Config.HarmfulColour,
+                Filled = Config.Filled,
+                FillAlpha = Config.FillAlpha,
+                OuterRing = Config.OuterRing,
+                Thickness = Config.Thickness,
+                PersistSeconds = Config.PersistSeconds,
+            };
+        }
 
         private static List<ActionEntry> StyleEntries()
             => ActionData.GetCustomisedActionStyleListCopy()
@@ -300,27 +316,55 @@ namespace ActionEffectRange.UI
 
         private void EditStyle(Action<ActionStyleDataItem> apply)
         {
+            if (loadingStyle) return;
+            if (selectedStyled == null)
+            {
+                // Nothing to edit: put the controls back
+                ShowEditedStyle();
+                return;
+            }
             apply(editedStyle);
-            if (loadingStyle || selectedStyled == null) return;
             ActionData.SetActionStyle(editedStyle.CopyFor(selectedStyled.ActionId));
             SaveCustomised();
         }
 
         private void OnStyledActionSelected(ActionEntry? entry)
         {
+            // Clicking the selected row again deselects it
+            var selected = entry != null && styleListNode != null
+                && styleListNode.SelectedOptions.Contains(entry);
+            SelectStyledAction(selected ? entry : null);
+        }
+
+        private void SelectStyledAction(ActionEntry? entry)
+        {
             selectedStyled = entry;
-            if (entry == null || !ActionData.TryGetActionStyle(entry.ActionId, out var item)
-                || item == null) return;
-            editedStyle = item.CopyFor(0);
+            editedStyle = entry != null
+                && ActionData.TryGetActionStyle(entry.ActionId, out var item) && item != null
+                ? item.CopyFor(entry.ActionId) : DefaultActionStyle();
+            ShowEditedStyle();
+        }
+
+        private void ShowEditedStyle()
+        {
+            var enabled = selectedStyled != null;
             loadingStyle = true;
             try
             {
+                styleEditingNode?.String = enabled
+                    ? $"Style of {selectedStyled!.Description}" : NoStyleSelectedLabel;
                 styleColourNode?.CurrentColor = editedStyle.Colour;
                 styleFilledNode?.IsChecked = editedStyle.Filled;
                 styleFillAlphaNode?.SetValueSilent(editedStyle.FillAlpha);
                 styleOuterRingNode?.IsChecked = editedStyle.OuterRing;
                 styleThicknessNode?.SetValueSilent(editedStyle.Thickness);
                 stylePersistNode?.SetValueSilent(editedStyle.PersistSeconds);
+                styleColourNode?.IsEnabled = enabled;
+                styleFilledNode?.IsEnabled = enabled;
+                styleFillAlphaNode?.IsEnabled = enabled;
+                styleOuterRingNode?.IsEnabled = enabled;
+                styleThicknessNode?.IsEnabled = enabled;
+                stylePersistNode?.IsEnabled = enabled;
             }
             finally
             {
@@ -328,10 +372,12 @@ namespace ActionEffectRange.UI
             }
         }
 
+        // Added actions start from the global style, then are edited one by one
         private void AddStyledActions(List<ActionEntry> entries)
         {
             foreach (var e in entries)
-                ActionData.SetActionStyle(editedStyle.CopyFor(e.ActionId));
+                if (!ActionData.TryGetActionStyle(e.ActionId, out _))
+                    ActionData.SetActionStyle(DefaultActionStyle(e.ActionId));
             SaveCustomised();
             RefreshLists();
         }
@@ -340,7 +386,6 @@ namespace ActionEffectRange.UI
         {
             if (selectedStyled == null) return;
             ActionData.RemoveFromActionStyleList(selectedStyled.ActionId);
-            selectedStyled = null;
             SaveCustomised();
             RefreshLists();
         }
@@ -430,6 +475,7 @@ namespace ActionEffectRange.UI
             ListHelpers.EnsureMinScrollThumb(blacklistNode);
             ListHelpers.EnsureMinScrollThumb(coneListNode);
             ListHelpers.EnsureMinScrollThumb(styleListNode);
+            SelectStyledAction(null);
         }
 
         private static void SaveCustomised()
