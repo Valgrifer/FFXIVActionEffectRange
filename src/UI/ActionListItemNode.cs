@@ -13,7 +13,7 @@ namespace ActionEffectRange.UI
     {
         public static ActionEntry FromRow(Sheets.Action row, string detail = "")
             => new(row.RowId, row.Name.ExtractText(), row.Icon,
-                ActionDataInterfacing.GetActionDescription(row), detail);
+                ActionDataInterfacing.GetActionLabel(row), detail);
 
         public static ActionEntry FromId(uint actionId, string detail = "")
         {
@@ -28,7 +28,7 @@ namespace ActionEffectRange.UI
 
     public class ActionListItemNode : ListItemWithFocusNav<ActionEntry>, IListItemNode
     {
-        public static float ItemHeight => 40.0f;
+        public static float ItemHeight => 44.0f;
 
         private readonly IconImageNode iconNode;
         private readonly TextNode nameNode;
@@ -75,23 +75,48 @@ namespace ActionEffectRange.UI
             nameNode.String = itemData.Description;
             detailNode.String = itemData.Detail;
             idNode.String = $"#{itemData.ActionId}";
+            LayoutChildren(itemData);
         }
 
         protected override void OnSizeChanged()
         {
             base.OnSizeChanged();
+            LayoutChildren();
+        }
 
-            iconNode.Size = new Vector2(Height - 4.0f, Height - 4.0f);
-            iconNode.Position = new Vector2(2.0f, 2.0f);
+        // KamiToolKit ignores negative sizes and only calls OnSizeChanged once both
+        // width and height are positive, while list items can be created before the
+        // list has its final width; so lay out from the current size whenever the
+        // node is (re)populated, never producing negative sizes.
+        private void LayoutChildren(ActionEntry? data = null)
+        {
+            data ??= ItemData;
+            var height = Height > 0 ? Height : ItemHeight;
+            var width = Width;
+            if (width <= 0) return;
 
-            idNode.Size = new Vector2(56.0f, Height / 2.0f);
-            idNode.Position = new Vector2(Width - idNode.Width - 4.0f, 0.0f);
+            var iconSize = height - 6.0f;
+            iconNode.Size = new Vector2(iconSize, iconSize);
+            iconNode.Position = new Vector2(4.0f, 3.0f);
 
-            nameNode.Size = new Vector2(Width - iconNode.Width - idNode.Width - 12.0f, Height / 2.0f);
-            nameNode.Position = new Vector2(iconNode.Width + 8.0f, 0.0f);
+            var textX = iconNode.Position.X + iconSize + 8.0f;
+            var idWidth = 60.0f;
 
-            detailNode.Size = nameNode.Size with { X = Width - iconNode.Width - 12.0f };
-            detailNode.Position = nameNode.Position with { Y = Height / 2.0f };
+            // Without a detail line, the name and id are centred vertically
+            var hasDetail = !string.IsNullOrEmpty(data?.Detail);
+            var lineHeight = hasDetail ? height / 2.0f : height;
+            nameNode.AlignmentType = hasDetail ? AlignmentType.BottomLeft : AlignmentType.Left;
+            idNode.AlignmentType = hasDetail ? AlignmentType.BottomRight : AlignmentType.Right;
+            detailNode.IsVisible = hasDetail;
+
+            idNode.Size = new Vector2(idWidth, lineHeight);
+            idNode.Position = new Vector2(MathF.Max(textX, width - idWidth - 6.0f), 0.0f);
+
+            nameNode.Size = new Vector2(MathF.Max(1.0f, idNode.Position.X - textX - 4.0f), lineHeight);
+            nameNode.Position = new Vector2(textX, 0.0f);
+
+            detailNode.Size = new Vector2(MathF.Max(1.0f, width - textX - 6.0f), height / 2.0f);
+            detailNode.Position = new Vector2(textX, height / 2.0f);
         }
     }
 }

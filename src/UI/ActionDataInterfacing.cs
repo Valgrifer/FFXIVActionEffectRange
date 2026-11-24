@@ -20,6 +20,16 @@ namespace ActionEffectRange.UI
                 && (filter == null || filter(row)))
             .Take(maxCount);
 
+        // Name with class/job and PvP tags, without the id
+        public static string GetActionLabel(Sheets.Action row)
+        {
+            var classjobRow = row.ClassJob.ValueNullable;
+            var classjob = classjobRow != null && classjobRow.Value.RowId > 0
+                ? $" [{classjobRow.Value.Abbreviation.ExtractText()}]" : string.Empty;
+            var pvp = row.IsPvP ? " [PvP]" : string.Empty;
+            return $"{row.Name.ExtractText()}{classjob}{pvp}";
+        }
+
         public static string GetActionDescription(Sheets.Action row)
         {
             var classjobRow = row.ClassJob.ValueNullable;
