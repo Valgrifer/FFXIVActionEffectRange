@@ -1,4 +1,4 @@
-using KamiToolKit.Controls.Search;
+﻿using KamiToolKit.Controls.Search;
 using Lumina.Text.ReadOnly;
 using System.Linq;
 
@@ -37,6 +37,12 @@ namespace ActionEffectRange.UI
 
             base.OnSearchInputReceived(searchString);
             ListHelpers.EnsureMinScrollThumb(ResultsListNode);
+            // New visible rows must be added to the collision list to be clickable
+            unsafe
+            {
+                FFXIVClientStructs.FFXIV.Component.GUI.AtkUnitBase* addon = this;
+                if (addon != null) addon->UpdateCollisionNodeList(false);
+            }
         }
     }
 }

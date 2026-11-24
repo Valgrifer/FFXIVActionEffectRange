@@ -68,17 +68,10 @@ namespace ActionEffectRange.Drawing.Types
 
             if (Style.OuterRing)
             {
-                // outer
-                for (int i = 0; i < Config.NumSegments; i++)
-                    if (!float.IsNaN(outerPoints[i].X)) 
-                        drawList.PathLineTo(outerPoints[i]);
-                drawList.PathStroke(RingColour, ImDrawFlags.Closed, Style.Thickness);
-
-                // inner
-                for (int i = 0; i < Config.NumSegments; i++)
-                    if (!float.IsNaN(innerPoints[i].X)) 
-                        drawList.PathLineTo(innerPoints[i]);
-                drawList.PathStroke(RingColour, ImDrawFlags.Closed, Style.Thickness);
+                // Both outlines inside the ring: outer one inwards,
+                //  inner one outwards (away from the hole)
+                StrokeInside(drawList, outerPoints);
+                StrokeInside(drawList, innerPoints, outward: true);
             }
         }
     }

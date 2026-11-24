@@ -31,23 +31,18 @@ namespace ActionEffectRange.Drawing.Types
                     out var p, out var pr);
 
                 // Dont add points that may be projected to weird positions
-                if (pr.Z < -.1f) points[i] = new(float.NaN, float.NaN);
-                else 
-                {
-                    points[i] = p;
-                    drawList.PathLineTo(p);
-                }
+                points[i] = pr.Z < -.1f ? new(float.NaN, float.NaN) : p;
             }
 
             if (Style.Filled 
                 && (Config.LargeDrawOpt == 0 || Radius < Config.LargeThreshold))
             {
-                drawList.PathFillConvex(FillColour);
                 foreach (var p in points)
                     if (!float.IsNaN(p.X)) drawList.PathLineTo(p);
+                drawList.PathFillConvex(FillColour);
             }
             if (Style.OuterRing)
-                drawList.PathStroke(RingColour, ImDrawFlags.Closed, Style.Thickness);
+                StrokeInside(drawList, points);
             drawList.PathClear();
         }
     }

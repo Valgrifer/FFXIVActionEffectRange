@@ -1,4 +1,5 @@
 ﻿using Dalamud.Bindings.ImGui;
+using System.Collections.Generic;
 
 namespace ActionEffectRange.Drawing.Types
 {
@@ -26,7 +27,8 @@ namespace ActionEffectRange.Drawing.Types
             CentralAngleCycles = centralAngleCycles;
         }
 
-        private void DrawHalfCone(ImDrawListPtr drawList, Vector2 projectedOrigin, 
+        // Fills a half cone and returns its arc points, or null if it cannot be drawn
+        private Vector2[]? DrawHalfCone(ImDrawListPtr drawList, Vector2 projectedOrigin, 
             Vector2 projectedEnd, int numSegments, bool drawClockwise)
         {
             var points = new Vector2[numSegments];
@@ -50,7 +52,7 @@ namespace ActionEffectRange.Drawing.Types
                 if (pr.Z < -1)
                 {
                     drawList.PathClear();
-                    return;
+                    return null;
                 }
                 points[i] = p;
                 drawList.PathLineTo(p);
@@ -58,19 +60,8 @@ namespace ActionEffectRange.Drawing.Types
             drawList.PathLineTo(projectedEnd);
             if (Style.Filled)
                 drawList.PathFillConvex(FillColour);
-            if (Style.OuterRing)
-            {
-                if (Style.Filled)
-                {
-                    drawList.PathLineTo(projectedOrigin);
-                    foreach (var p in points)
-                        drawList.PathLineTo(p);
-                    drawList.PathLineTo(projectedEnd);
-                }
-                drawList.PathStroke(
-                    RingColour, ImDrawFlags.None, Style.Thickness);
-            }
             drawList.PathClear();
+            return points;
         }
 
         public override void Draw(ImDrawListPtr drawList)
@@ -84,9 +75,17 @@ namespace ActionEffectRange.Drawing.Types
             var numSegmentsHalf 
                 = (int)(CentralAngleCycles * Config.NumSegments / 2);
 
-            DrawHalfCone(drawList, p0, pe, numSegmentsHalf, true);
-            DrawHalfCone(drawList, p0, pe, numSegmentsHalf, false);
-            return;
+            var left = DrawHalfCone(drawList, p0, pe, numSegmentsHalf, true);
+            var right = DrawHalfCone(drawList, p0, pe, numSegmentsHalf, false);
+            if (!Style.OuterRing || left == null || right == null) return;
+
+            // Whole cone outline: origin, arc from one edge to the other
+            var polygon = new List<Vector2>(left.Length + right.Length + 2) { p0 };
+            polygon.AddRange(left);
+            polygon.Add(pe);
+            for (var i = right.Length - 1; i >= 0; i--)
+                polygon.Add(right[i]);
+            StrokeInside(drawList, polygon);
         }
     }
 }

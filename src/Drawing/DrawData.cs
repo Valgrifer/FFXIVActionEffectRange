@@ -1,4 +1,5 @@
 ﻿using Dalamud.Bindings.ImGui;
+using System.Collections.Generic;
 
 namespace ActionEffectRange.Drawing
 {
@@ -91,7 +92,55 @@ namespace ActionEffectRange.Drawing
             if (Style.Filled)
                 drawList.AddQuadFilled(p1s, p2s, p3s, p4s, FillColour);
             if (Style.OuterRing)
-                drawList.AddQuad(p1s, p2s, p3s, p4s, RingColour, Style.Thickness);
+                StrokeInside(drawList, [p1s, p2s, p3s, p4s]);
+        }
+
+        // Stroke a closed polygon (screen space) with the outline lying entirely
+        //  inside the shape, so that its outer edge is the border of the area.
+        // With outward, the outline lies outside the polygon instead
+        //  (e.g. the hole of a donut).
+        protected void StrokeInside(ImDrawListPtr drawList,
+            IReadOnlyList<Vector2> polygon, bool outward = false)
+        {
+            // Drop invalid and duplicate points
+            var points = new List<Vector2>(polygon.Count);
+            foreach (var p in polygon)
+                if (!float.IsNaN(p.X) && !float.IsNaN(p.Y)
+                    && (points.Count == 0 || Vector2.DistanceSquared(points[^1], p) > .0001f))
+                    points.Add(p);
+            if (points.Count > 1 && Vector2.DistanceSquared(points[0], points[^1]) <= .0001f)
+                points.RemoveAt(points.Count - 1);
+            var n = points.Count;
+            if (n < 2) return;
+
+            var area = 0f;
+            for (var i = 0; i < n; i++)
+            {
+                var a = points[i];
+                var b = points[(i + 1) % n];
+                area += a.X * b.Y - b.X * a.Y;
+            }
+            // Interior is on the left of the edges (-dy, dx) when area > 0
+            var sign = area >= 0 ? 1f : -1f;
+            if (outward) sign = -sign;
+            var half = Style.Thickness / 2f;
+
+            for (var i = 0; i < n; i++)
+            {
+                var prev = points[(i - 1 + n) % n];
+                var cur = points[i];
+                var next = points[(i + 1) % n];
+                var e1 = Vector2.Normalize(cur - prev);
+                var e2 = Vector2.Normalize(next - cur);
+                var n1 = sign * new Vector2(-e1.Y, e1.X);
+                var n2 = sign * new Vector2(-e2.Y, e2.X);
+                var m = n1 + n2;
+                m = m.LengthSquared() < 1e-6f ? n1 : Vector2.Normalize(m);
+                // Miter offset, limited at very sharp corners
+                var dist = half / MathF.Max(Vector2.Dot(m, n1), .25f);
+                drawList.PathLineTo(cur + m * dist);
+            }
+            drawList.PathStroke(RingColour, ImDrawFlags.Closed, Style.Thickness);
         }
 
         #endregion

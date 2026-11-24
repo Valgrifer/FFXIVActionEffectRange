@@ -1,4 +1,4 @@
-using KamiToolKit.Controls.Builders;
+﻿using KamiToolKit.Controls.Builders;
 using KamiToolKit.UI.Nodes;
 using KamiToolKit.UI.Nodes.ComponentNode;
 using Lumina.Text.ReadOnly;
@@ -60,12 +60,18 @@ namespace ActionEffectRange.UI
             Live.Add(this);
         }
 
-        // The text set before the owning window is set up gets cleared:
-        // windows call this once shown to display the values again
-        public static void RefreshAll()
+        // The text set before the owning window is fully set up gets cleared, so
+        // windows call this every frame: shows the value again whenever the
+        // displayed text differs, unless the user is typing in the field
+        public static void SyncAll()
         {
             foreach (var node in Live)
-                node.Input.SetValueSilent(node.Format(node.value));
+            {
+                if (node.Input.IsFocused) continue;
+                var text = node.Format(node.value);
+                if (node.Input.CurrentTextNode.String.ExtractText() != text)
+                    node.Input.SetValueSilent(text);
+            }
         }
 
         protected override void Dispose(bool isNativeDestructor)

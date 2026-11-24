@@ -1,4 +1,4 @@
-using ActionEffectRange.Actions.Data;
+﻿using ActionEffectRange.Actions.Data;
 using ActionEffectRange.Actions.Data.Template;
 using ActionEffectRange.Actions.Enums;
 using ActionEffectRange.Drawing;
@@ -61,11 +61,10 @@ namespace ActionEffectRange.UI
             content.AttachNode(this);
         }
 
-        protected override unsafe void OnShow(AtkUnitBase* addon)
+        protected override unsafe void OnUpdate(AtkUnitBase* addon)
         {
-            base.OnShow(addon);
-            // Text inputs are reset when the components are set up
-            SliderInputNode.RefreshAll();
+            base.OnUpdate(addon);
+            SliderInputNode.SyncAll();
         }
 
         protected override unsafe void OnFinalize(AtkUnitBase* addon)

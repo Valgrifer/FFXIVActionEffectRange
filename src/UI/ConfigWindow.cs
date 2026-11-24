@@ -1,6 +1,7 @@
 ﻿using ActionEffectRange.Actions.Data;
 using ActionEffectRange.Actions.Data.Template;
 using ActionEffectRange.Actions.Enums;
+using ActionEffectRange.Drawing;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Controls.Builders;
 using KamiToolKit.Core.Interfaces;
@@ -20,6 +21,7 @@ namespace ActionEffectRange.UI
         private const float TabPadding = 10.0f;
         private const float ItemSpacing = 3.0f;
         private const float CategorySpacing = 14.0f;
+        private const float ColourEditWidth = 260.0f;
         private static readonly float[] RowRatios = [0.55f, 0.45f];
 
         private ActionSearchAddon? searchAddon;
@@ -59,8 +61,18 @@ namespace ActionEffectRange.UI
             base.OnShow(addon);
             // Lists build their rows before they have their final size
             RebuildLists();
-            // Text inputs are reset when the components are set up
-            SliderInputNode.RefreshAll();
+        }
+
+        protected override unsafe void OnUpdate(AtkUnitBase* addon)
+        {
+            base.OnUpdate(addon);
+            SliderInputNode.SyncAll();
+        }
+
+        private unsafe void UpdateCollisionNodes()
+        {
+            AtkUnitBase* addon = this;
+            if (addon != null) addon->UpdateCollisionNodeList(false);
         }
 
         private void RebuildLists()
@@ -159,10 +171,20 @@ namespace ActionEffectRange.UI
 
         private void BuildStyleTab(NodeBuilder b) => b
             .CategoryLabel("Colours")
-            .ColorEdit4("Beneficial actions", Config.BeneficialColour, new Vector4(.5f, .5f, 1, 1),
-                v => Set(() => Config.BeneficialColour = v))
-            .ColorEdit4("Harmful actions", Config.HarmfulColour, new Vector4(1, .5f, .5f, 1),
-                v => Set(() => Config.HarmfulColour = v))
+            .HorizontalList(h => h
+                .ColorEdit4("Beneficial actions", Config.BeneficialColour, new Vector4(.5f, .5f, 1, 1),
+                    v => Set(() => Config.BeneficialColour = v),
+                    configure: n => ((NodeBase)n).Width = ColourEditWidth)
+                .TextButton("Test", () => EffectRangeDrawing.DrawColourTest(beneficial: true),
+                    n => n.Width = 80),
+                n => { n.Height = 26; ((LayoutListNode)n).ItemSpacing = 6; })
+            .HorizontalList(h => h
+                .ColorEdit4("Harmful actions", Config.HarmfulColour, new Vector4(1, .5f, .5f, 1),
+                    v => Set(() => Config.HarmfulColour = v),
+                    configure: n => ((NodeBase)n).Width = ColourEditWidth)
+                .TextButton("Test", () => EffectRangeDrawing.DrawColourTest(beneficial: false),
+                    n => n.Width = 80),
+                n => { n.Height = 26; ((LayoutListNode)n).ItemSpacing = 6; })
             .Spacer(CategorySpacing)
             .CategoryLabel("Shape")
             .Checkbox("Draw outline (outer ring)", Config.OuterRing,
@@ -399,9 +421,10 @@ namespace ActionEffectRange.UI
             blacklistNode?.Options = BlacklistEntries();
             coneListNode?.Options = ConeEntries();
             styleListNode?.Options = StyleEntries();
-            // Rows that were hidden when the window was set up are not part of the
-            // addon's collision list: rebuild them so new rows can be clicked
             RebuildLists();
+            // The game only hit-tests nodes in the addon's collision list, which the
+            // list updates on scroll but not when its content changes
+            UpdateCollisionNodes();
         }
 
         private static void SaveCustomised()

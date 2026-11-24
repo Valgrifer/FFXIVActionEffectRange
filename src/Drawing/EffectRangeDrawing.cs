@@ -1,5 +1,6 @@
 ﻿using ActionEffectRange.Actions;
 using ActionEffectRange.Actions.EffectRange;
+using ActionEffectRange.Actions.Enums;
 using ActionEffectRange.Drawing.Types;
 using ActionEffectRange.Drawing.Workers;
 using Dalamud.Interface.Utility;
@@ -88,6 +89,22 @@ namespace ActionEffectRange.Drawing
             var erdata = EffectRangeDataManager.NewData(actionId);
             if (erdata == null) return false;
             erdata = EffectRangeDataManager.CustomiseEffectRangeData(erdata);
+            foreach (var worker in workers)
+                if (worker is DrawWorker drawWorker)
+                    drawWorker.QueueTestDrawing(erdata,
+                        player.Position, player.Position, player.Rotation);
+            return true;
+        }
+
+        // Draw a sample circle around the local player with the global style and
+        //  the default beneficial or harmful colour
+        public static bool DrawColourTest(bool beneficial)
+        {
+            var player = ObjectTable.LocalPlayer;
+            if (!IsPlayerLoaded || player == null) return false;
+            var erdata = EffectRangeData.Create(0, 0, false,
+                beneficial ? ActionHarmfulness.Beneficial : ActionHarmfulness.Harmful,
+                0, 8, 0, (byte)ActionAoEType.Circle);
             foreach (var worker in workers)
                 if (worker is DrawWorker drawWorker)
                     drawWorker.QueueTestDrawing(erdata,
